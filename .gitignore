@@ -4,11 +4,15 @@ __pycache__/
 *$py.class
 
 # 临时文件
-*.ainovel
 *.json
+*.ainovel
 config.ini
 !config.example.ini
 !requirements.txt
+!prompt_history.json
+!prompt_templates.json
+!12345.ainovel
+!123.ainovel
 
 # 编辑器临时文件
 .vscode/

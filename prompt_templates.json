@@ -1,0 +1,30 @@
+[
+  {
+    "name": "标准大纲模板",
+    "content": "请为我创建一部小说的详细大纲，包括以下内容：\n\n1. 小说标题\n2. 核心主题\n3. 主要人物（包括姓名、身份、性格特点和背景故事）\n4. 故事梗概\n5. 分卷结构（每卷包含标题、简介和具体章节）\n6. 世界观设定\n\n请确保大纲结构完整、逻辑合理，并以JSON格式返回。",
+    "category": "outline",
+    "description": "标准的小说大纲生成模板",
+    "created_at": 1743335143.0577495
+  },
+  {
+    "name": "标准章节模板",
+    "content": "请根据以下信息，为我创作一个完整、连贯、生动的章节内容：\n\n小说标题：{title}\n核心主题：{theme}\n世界观设定：{worldbuilding}\n\n当前卷：{volume_title}\n卷简介：{volume_description}\n\n当前章节：{chapter_title}\n章节摘要：{chapter_summary}\n\n请确保内容：\n1. 符合章节摘要的描述\n2. 与前后章节保持连贯\n3. 展现人物性格和发展\n4. 符合小说的整体风格和主题\n5. 包含丰富的对话、描写和情节发展",
+    "category": "chapter",
+    "description": "标准的章节生成模板",
+    "created_at": 1743335143.0582633
+  },
+  {
+    "name": "标准人物模板",
+    "content": "请为我生成一个详细的角色设定，角色类型为{character_type}。\n\n请以JSON格式返回角色设定，包含以下字段:\n- name: 角色姓名\n- identity: 角色身份\n- age: 角色年龄\n- gender: 角色性别\n- personality: 性格特点（详细描述）\n- background: 背景故事（详细描述）\n- appearance: 外貌描述（详细描述）\n- abilities: 能力特长（详细描述）\n- goals: 目标动机（详细描述）\n\n请确保生成的角色设定丰富、合理、有深度，并且符合角色类型的特点。",
+    "category": "character",
+    "description": "标准的人物生成模板",
+    "created_at": 1743335143.0587673
+  },
+  {
+    "name": "创意优化模板",
+    "content": "请分析以下内容，并提供创意优化建议：\n\n{content}\n\n请从以下几个方面提供具体的优化建议：\n1. 创意性和独特性\n2. 情节发展和转折\n3. 人物塑造和互动\n4. 世界观构建\n5. 语言风格和表达\n\n对于每个方面，请提供具体的改进建议和示例。",
+    "category": "improvement",
+    "description": "内容创意优化建议模板",
+    "created_at": 1743335143.0587673
+  }
+]
