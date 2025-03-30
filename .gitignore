@@ -1,0 +1,20 @@
+# Python缓存文件
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 临时文件
+*.ainovel
+*.json
+config.ini
+!config.example.ini
+!requirements.txt
+
+# 编辑器临时文件
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 日志文件
+*.log
