@@ -3,7 +3,8 @@ import asyncio
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
     QTextEdit, QPushButton, QComboBox, QGroupBox, QFormLayout,
-    QSpinBox, QDoubleSpinBox, QMessageBox, QSplitter, QFileDialog, QProgressBar
+    QSpinBox, QDoubleSpinBox, QMessageBox, QSplitter, QFileDialog, QProgressBar,
+    QDialog, QInputDialog
 )
 from PyQt6.QtCore import Qt, pyqtSignal, pyqtSlot
 
