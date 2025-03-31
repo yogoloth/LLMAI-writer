@@ -146,7 +146,9 @@ class OutlineEditTab(QWidget):
             self,
             f"AI生成{field_name}",
             field_name,
-            current_text
+            current_text,
+            models=["GPT", "Claude", "Gemini", "自定义OpenAI"],
+            default_model="GPT"
         )
         if dialog.exec() == QDialog.DialogCode.Accepted:
             result = dialog.get_result()

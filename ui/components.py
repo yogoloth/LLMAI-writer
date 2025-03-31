@@ -208,7 +208,18 @@ class AIGenerateDialog(QDialog):
             return
 
         # 获取模型
-        model_type = self.model_combo.currentText().lower()
+        model_text = self.model_combo.currentText().lower()
+        # 转换为模型类型
+        if model_text == "gpt":
+            model_type = "gpt"
+        elif model_text == "claude":
+            model_type = "claude"
+        elif model_text == "gemini":
+            model_type = "gemini"
+        elif model_text == "自定义openai":
+            model_type = "custom_openai"
+        else:
+            model_type = "gpt"  # 默认使用GPT
         try:
             # 尝试不同的方式获取main_window
             if hasattr(self.parent(), 'main_window'):
