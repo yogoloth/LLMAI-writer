@@ -159,21 +159,8 @@ class GenerationThread(QThread):
 
     async def _run_generator(self):
         """运行生成器方法"""
-        # 检查是否有回调参数
-        if 'callback' in self.kwargs:
-            original_callback = self.kwargs['callback']
-
-            # 创建新的回调函数，同时发送进度信号
-            def combined_callback(chunk):
-                if original_callback:
-                    original_callback(chunk)
-                self.progress_signal.emit(chunk)
-
-            # 替换回调函数
-            self.kwargs['callback'] = combined_callback
-        else:
-            # 添加回调函数
-            self.kwargs['callback'] = lambda chunk: self.progress_signal.emit(chunk)
+        # 添加回调函数，只发送进度信号，不调用原始回调
+        self.kwargs['callback'] = lambda chunk: self.progress_signal.emit(chunk)
 
         # 运行生成器方法
         result = self.generator_method(*self.args, **self.kwargs)
