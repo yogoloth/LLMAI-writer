@@ -218,6 +218,8 @@ class AIGenerateDialog(QDialog):
             model_type = "gemini"
         elif model_text == "自定义openai":
             model_type = "custom_openai"
+        elif model_text == "modelscope":
+            model_type = "modelscope"
         else:
             model_type = "gpt"  # 默认使用GPT
         try:

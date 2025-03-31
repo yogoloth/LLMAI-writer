@@ -16,6 +16,7 @@ from models.gpt_model import GPTModel
 from models.claude_model import ClaudeModel
 from models.gemini_model import GeminiModel
 from models.custom_openai_model import CustomOpenAIModel
+from models.modelscope_model import ModelScopeModel
 
 from ui.components import ThemeManager, StatusBarManager, KeyboardShortcutManager
 from ui.outline_tab import OutlineTab
@@ -152,8 +153,17 @@ class MainWindow(QMainWindow):
             except Exception as e:
                 print(f"自定义OpenAI模型初始化失败: {e}")
 
+        # 初始化ModelScope API
+        self.has_modelscope = False
+        if self.config_manager.is_modelscope_enabled():
+            try:
+                self.modelscope_model = ModelScopeModel(self.config_manager)
+                self.has_modelscope = True
+            except Exception as e:
+                print(f"ModelScope模型初始化失败: {e}")
+
         # 检查是否至少有一个模型可用
-        if not any([self.has_gpt, self.has_claude, self.has_gemini, self.has_custom_openai]):
+        if not any([self.has_gpt, self.has_claude, self.has_gemini, self.has_custom_openai, self.has_modelscope]):
             QMessageBox.warning(
                 self,
                 "模型初始化失败",
@@ -170,6 +180,8 @@ class MainWindow(QMainWindow):
             return self.gemini_model
         elif model_type == "custom_openai" and self.has_custom_openai:
             return self.custom_openai_model
+        elif model_type == "modelscope" and self.has_modelscope:
+            return self.modelscope_model
         else:
             # 返回第一个可用的模型
             if self.has_gpt:
@@ -180,6 +192,8 @@ class MainWindow(QMainWindow):
                 return self.gemini_model
             elif self.has_custom_openai:
                 return self.custom_openai_model
+            elif self.has_modelscope:
+                return self.modelscope_model
             else:
                 raise ValueError("没有可用的AI模型")
 

@@ -25,19 +25,26 @@ class ConfigManager:
             'gpt_api_key': 'your_openai_api_key_here',
             'claude_api_key': 'your_anthropic_api_key_here',
             'gemini_api_key': 'your_google_api_key_here',
-            'custom_openai_api_key': 'your_custom_api_key_here'
+            'custom_openai_api_key': 'your_custom_api_key_here',
+            'modelscope_api_key': 'your_modelscope_token_here'
         }
 
         self.config['MODELS'] = {
             'gpt_model': 'gpt-4-turbo',
             'claude_model': 'claude-3-opus-20240229',
             'gemini_model': 'gemini-2.0-flash',
-            'custom_openai_model': 'your_custom_model_name_here'
+            'custom_openai_model': 'your_custom_model_name_here',
+            'modelscope_model': 'deepseek-ai/DeepSeek-R1'
         }
 
         self.config['CUSTOM_OPENAI'] = {
             'enabled': 'false',
             'api_url': 'https://your-custom-api-endpoint.com/v1/chat/completions'
+        }
+
+        self.config['MODELSCOPE'] = {
+            'enabled': 'false',
+            'base_url': 'https://api-inference.modelscope.cn/v1/'
         }
 
         with open(self.config_path, 'w', encoding='utf-8') as f:
@@ -98,6 +105,13 @@ class ConfigManager:
             return False
 
         return self.config['CUSTOM_OPENAI'].getboolean('enabled', fallback=False)
+
+    def is_modelscope_enabled(self):
+        """检查ModelScope API是否启用"""
+        if 'MODELSCOPE' not in self.config:
+            return False
+
+        return self.config['MODELSCOPE'].getboolean('enabled', fallback=False)
 
     def save_config(self):
         """保存配置到文件"""
