@@ -53,6 +53,8 @@ class OutlineTab(QWidget):
         # 温度设置已移除
 
         # 添加提示词模板选择
+        template_layout = QHBoxLayout()
+
         self.template_combo = QComboBox()
         self.template_combo.addItem("选择提示词模板")
 
@@ -62,7 +64,19 @@ class OutlineTab(QWidget):
             self.template_combo.addItem(template.name)
 
         self.template_combo.currentIndexChanged.connect(self._on_template_selected)
-        model_layout.addRow("提示词模板:", self.template_combo)
+        template_layout.addWidget(self.template_combo)
+
+        # 添加编辑和保存模板按钮
+        self.edit_template_button = QPushButton("编辑")
+        self.edit_template_button.setEnabled(False)
+        self.edit_template_button.clicked.connect(self._edit_template)
+        template_layout.addWidget(self.edit_template_button)
+
+        self.save_template_button = QPushButton("保存")
+        self.save_template_button.clicked.connect(self._save_as_template)
+        template_layout.addWidget(self.save_template_button)
+
+        model_layout.addRow("提示词模板:", template_layout)
 
         model_group.setLayout(model_layout)
         left_layout.addWidget(model_group)
@@ -208,12 +222,16 @@ class OutlineTab(QWidget):
     def _on_template_selected(self, index):
         """模板选择事件处理"""
         if index <= 0:  # 第一项是提示文本
+            self.edit_template_button.setEnabled(False)
             return
 
         template_name = self.template_combo.currentText()
         template = self.prompt_manager.get_template(template_name)
 
         if template:
+            # 启用编辑按钮
+            self.edit_template_button.setEnabled(True)
+
             # 显示模板信息
             QMessageBox.information(
                 self,
@@ -390,3 +408,162 @@ class OutlineTab(QWidget):
 
     # 已移除load_outline方法
     # 这个功能现在由主窗口的工具栏按钮提供
+
+    def _edit_template(self):
+        """编辑选中的模板"""
+        if self.template_combo.currentIndex() <= 0:
+            return
+
+        template_name = self.template_combo.currentText()
+        template = self.prompt_manager.get_template(template_name)
+
+        if not template:
+            return
+
+        # 创建编辑对话框
+        dialog = QDialog(self)
+        dialog.setWindowTitle(f"编辑模板: {template_name}")
+        dialog.resize(600, 500)
+
+        layout = QVBoxLayout(dialog)
+
+        # 模板名称
+        name_layout = QHBoxLayout()
+        name_layout.addWidget(QLabel("模板名称:"))
+        name_edit = QLineEdit(template.name)
+        name_layout.addWidget(name_edit)
+        layout.addLayout(name_layout)
+
+        # 模板描述
+        desc_layout = QHBoxLayout()
+        desc_layout.addWidget(QLabel("模板描述:"))
+        desc_edit = QLineEdit(template.description)
+        desc_layout.addWidget(desc_edit)
+        layout.addLayout(desc_layout)
+
+        # 模板分类
+        category_layout = QHBoxLayout()
+        category_layout.addWidget(QLabel("模板分类:"))
+        category_edit = QLineEdit(template.category)
+        category_layout.addWidget(category_edit)
+        layout.addLayout(category_layout)
+
+        # 模板内容
+        content_label = QLabel("模板内容:")
+        layout.addWidget(content_label)
+
+        content_edit = QTextEdit()
+        content_edit.setPlainText(template.content)
+        layout.addWidget(content_edit)
+
+        # 按钮
+        button_layout = QHBoxLayout()
+
+        save_button = QPushButton("保存")
+        save_button.clicked.connect(dialog.accept)
+        button_layout.addWidget(save_button)
+
+        cancel_button = QPushButton("取消")
+        cancel_button.clicked.connect(dialog.reject)
+        button_layout.addWidget(cancel_button)
+
+        layout.addLayout(button_layout)
+
+        # 显示对话框
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            # 更新模板
+            updated_template = self.prompt_manager.update_template(
+                template.name,
+                name_edit.text(),
+                content_edit.toPlainText(),
+                desc_edit.text(),
+                category_edit.text()
+            )
+
+            if updated_template:
+                # 如果名称变化，需要更新下拉框
+                if updated_template.name != template.name:
+                    current_index = self.template_combo.currentIndex()
+                    self.template_combo.setItemText(current_index, updated_template.name)
+
+                QMessageBox.information(self, "保存成功", f"模板 '{updated_template.name}' 已更新")
+
+    def _save_as_template(self):
+        """保存当前设置为新模板"""
+        # 获取当前设置
+        title = self.title_edit.text().strip()
+        genre = self.genre_edit.text().strip()
+        theme = self.theme_edit.toPlainText().strip()
+        style = self.style_edit.toPlainText().strip()
+        synopsis = self.synopsis_edit.toPlainText().strip()
+        volume_count = self.volume_count_spin.value()
+        chapters_per_volume = self.chapters_per_volume_spin.value()
+        words_per_chapter = self.words_per_chapter_spin.value()
+
+        # 获取角色数量设置
+        protagonist_count = self.protagonist_count_spin.value()
+        important_count = self.important_count_spin.value()
+        supporting_count = self.supporting_count_spin.value()
+        minor_count = self.minor_count_spin.value()
+
+        # 创建模板内容
+        template_content = f"""请为我创建一部小说的详细大纲，具体要求如下：
+
+小说标题：{title if title else '[用户输入的标题]'}
+小说类型：{genre if genre else '[用户输入的类型]'}
+主题：{theme if theme else '[用户输入的主题]'}
+风格：{style if style else '[用户输入的风格]'}
+简介：{synopsis if synopsis else '[用户输入的简介]'}
+
+卷数：{volume_count} 卷
+每卷章节数：{chapters_per_volume} 章
+每章字数：{words_per_chapter} 字
+
+人物设置：
+主角数量：{protagonist_count} 个
+重要角色数量：{important_count} 个
+配角数量：{supporting_count} 个
+龙套数量：{minor_count} 个
+
+请生成以下内容：
+1. 小说标题
+2. 核心主题
+3. 主要人物（包括姓名、身份、性格特点和背景故事）
+4. 故事梗概
+5. 分卷结构（每卷包含标题、简介和具体章节）
+6. 世界观设定
+
+特别要求：
+1. 卷标题必须包含卷号，如“第一卷：卷标题”
+2. 章节标题必须包含章节号，如“第一章：章节标题”
+
+请确保大纲结构完整、逻辑合理，并以JSON格式返回。"""
+
+        # 获取模板名称
+        template_name, ok = QInputDialog.getText(
+            self, "保存模板", "请输入模板名称:",
+            text=f"自定义大纲模板_{len(self.prompt_manager.get_templates_by_category('outline')) + 1}"
+        )
+
+        if ok and template_name:
+            # 获取模板描述
+            template_desc, ok = QInputDialog.getText(
+                self, "模板描述", "请输入模板描述:",
+                text=f"基于当前设置创建的大纲模板"
+            )
+
+            if ok:
+                # 添加模板
+                new_template = self.prompt_manager.add_template(
+                    template_name,
+                    template_content,
+                    template_desc,
+                    "outline"
+                )
+
+                if new_template:
+                    # 添加到下拉框
+                    self.template_combo.addItem(new_template.name)
+                    self.template_combo.setCurrentText(new_template.name)
+
+                    QMessageBox.information(self, "保存成功", f"模板 '{new_template.name}' 已保存")
