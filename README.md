@@ -8,7 +8,7 @@ LLMAI-writer是一个基于大型语言模型的小说生成工具，支持大�
 - **章节生成**：基于大纲内容，生成详细的章节内容
 - **人物设计**：创建和管理小说中的角色
 - **大纲编辑**：提供总大纲编辑和章节大纲编辑功能
-- **多模型支持**：支持GPT、Claude和Gemini等多种AI模型
+- **多模型支持**：支持GPT、Claude、Gemini、ModelScope的DeepSeek-R1模型以及自定义OpenAI兼容API
 - **深色模式**：支持明亮和深色两种界面主题
 - **提示词模板**：内置多种提示词模板，也可自定义模板
 
@@ -24,6 +24,8 @@ LLMAI-writer是一个基于大型语言模型的小说生成工具，支持大�
    ```
    pip install -r requirements.txt
    ```
+
+   > **注意事项：** requirements.txt 文件由克劳德先生总结生成，如果安装过程中遇到问题，可以尝试删除文件中的版本号限制（即删除每行中的 `==x.x.x` 部分），或者手动安装主要依赖：PyQt6、openai、anthropic、google-generativeai 等。
 
 3. 配置API密钥：
    - 复制`config.example.ini`为`config.ini`
@@ -57,8 +59,9 @@ LLMAI-writer是一个基于大型语言模型的小说生成工具，支持大�
 在`config.ini`文件中配置以下内容：
 
 - **代理设置**：如果需要使用代理访问API，配置代理地址和端口
-- **API密钥**：配置OpenAI、Anthropic和Google的API密钥
+- **API密钥**：配置OpenAI、Anthropic、Google、ModelScope的API密钥以及自定义API密钥
 - **模型选择**：配置使用的具体模型版本
+- **自定义API**：可以配置自定义OpenAI兼容API和ModelScope API的端点和启用状态
 
 ## 系统要求
 
