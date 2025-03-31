@@ -15,6 +15,7 @@ from utils.async_utils import AsyncHelper, ProgressIndicator
 from models.gpt_model import GPTModel
 from models.claude_model import ClaudeModel
 from models.gemini_model import GeminiModel
+from models.custom_openai_model import CustomOpenAIModel
 
 from ui.components import ThemeManager, StatusBarManager, KeyboardShortcutManager
 from ui.outline_tab import OutlineTab
@@ -142,8 +143,17 @@ class MainWindow(QMainWindow):
             self.has_gemini = False
             print(f"Gemini模型初始化失败: {e}")
 
+        # 初始化自定义OpenAI兼容API
+        self.has_custom_openai = False
+        if self.config_manager.is_custom_openai_enabled():
+            try:
+                self.custom_openai_model = CustomOpenAIModel(self.config_manager)
+                self.has_custom_openai = True
+            except Exception as e:
+                print(f"自定义OpenAI模型初始化失败: {e}")
+
         # 检查是否至少有一个模型可用
-        if not any([self.has_gpt, self.has_claude, self.has_gemini]):
+        if not any([self.has_gpt, self.has_claude, self.has_gemini, self.has_custom_openai]):
             QMessageBox.warning(
                 self,
                 "模型初始化失败",
@@ -158,6 +168,8 @@ class MainWindow(QMainWindow):
             return self.claude_model
         elif model_type == "gemini" and self.has_gemini:
             return self.gemini_model
+        elif model_type == "custom_openai" and self.has_custom_openai:
+            return self.custom_openai_model
         else:
             # 返回第一个可用的模型
             if self.has_gpt:
@@ -166,6 +178,8 @@ class MainWindow(QMainWindow):
                 return self.claude_model
             elif self.has_gemini:
                 return self.gemini_model
+            elif self.has_custom_openai:
+                return self.custom_openai_model
             else:
                 raise ValueError("没有可用的AI模型")
 

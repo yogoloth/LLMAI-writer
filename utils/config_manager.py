@@ -24,13 +24,20 @@ class ConfigManager:
         self.config['API_KEYS'] = {
             'gpt_api_key': 'your_openai_api_key_here',
             'claude_api_key': 'your_anthropic_api_key_here',
-            'gemini_api_key': 'your_google_api_key_here'
+            'gemini_api_key': 'your_google_api_key_here',
+            'custom_openai_api_key': 'your_custom_api_key_here'
         }
 
         self.config['MODELS'] = {
             'gpt_model': 'gpt-4-turbo',
             'claude_model': 'claude-3-opus-20240229',
-            'gemini_model': 'gemini-2.0-flash'
+            'gemini_model': 'gemini-2.0-flash',
+            'custom_openai_model': 'your_custom_model_name_here'
+        }
+
+        self.config['CUSTOM_OPENAI'] = {
+            'enabled': 'false',
+            'api_url': 'https://your-custom-api-endpoint.com/v1/chat/completions'
         }
 
         with open(self.config_path, 'w', encoding='utf-8') as f:
@@ -70,6 +77,27 @@ class ConfigManager:
 
         model_name = f'{model_type}_model'
         return self.config['MODELS'].get(model_name, None)
+
+    def get_config(self, section, key, default=None):
+        """获取指定配置项"""
+        if section not in self.config:
+            return default
+
+        return self.config[section].get(key, default)
+
+    def set_config(self, section, key, value):
+        """设置指定配置项"""
+        if section not in self.config:
+            self.config[section] = {}
+
+        self.config[section][key] = str(value)
+
+    def is_custom_openai_enabled(self):
+        """检查自定义OpenAI API是否启用"""
+        if 'CUSTOM_OPENAI' not in self.config:
+            return False
+
+        return self.config['CUSTOM_OPENAI'].getboolean('enabled', fallback=False)
 
     def save_config(self):
         """保存配置到文件"""

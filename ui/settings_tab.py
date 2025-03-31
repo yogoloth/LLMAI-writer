@@ -61,6 +61,11 @@ class SettingsTab(QWidget):
         self.gemini_api_key.setEchoMode(QLineEdit.EchoMode.Password)
         api_layout.addRow("Google API密钥:", self.gemini_api_key)
 
+        # 添加自定义OpenAI兼容API密钥
+        self.custom_openai_api_key = QLineEdit()
+        self.custom_openai_api_key.setEchoMode(QLineEdit.EchoMode.Password)
+        api_layout.addRow("自定义OpenAI API密钥:", self.custom_openai_api_key)
+
         api_group.setLayout(api_layout)
         main_layout.addWidget(api_group)
 
@@ -77,8 +82,26 @@ class SettingsTab(QWidget):
         self.gemini_model = QLineEdit()
         model_layout.addRow("Gemini模型:", self.gemini_model)
 
+        # 添加自定义OpenAI兼容API模型
+        self.custom_openai_model = QLineEdit()
+        model_layout.addRow("自定义OpenAI模型:", self.custom_openai_model)
+
         model_group.setLayout(model_layout)
         main_layout.addWidget(model_group)
+
+        # 创建自定义OpenAI API设置组
+        custom_openai_group = QGroupBox("自定义OpenAI兼容API设置")
+        custom_openai_layout = QFormLayout()
+
+        self.custom_openai_enabled = QCheckBox("启用自定义OpenAI兼容API")
+        custom_openai_layout.addRow("", self.custom_openai_enabled)
+
+        self.custom_openai_url = QLineEdit()
+        self.custom_openai_url.setPlaceholderText("https://your-custom-api-endpoint.com/v1/chat/completions")
+        custom_openai_layout.addRow("API地址:", self.custom_openai_url)
+
+        custom_openai_group.setLayout(custom_openai_layout)
+        main_layout.addWidget(custom_openai_group)
 
         # 创建按钮布局
         button_layout = QHBoxLayout()
@@ -113,6 +136,7 @@ class SettingsTab(QWidget):
             self.gpt_api_key.setText(api_config.get("gpt_api_key", ""))
             self.claude_api_key.setText(api_config.get("claude_api_key", ""))
             self.gemini_api_key.setText(api_config.get("gemini_api_key", ""))
+            self.custom_openai_api_key.setText(api_config.get("custom_openai_api_key", ""))
 
         # 加载模型设置
         if "MODELS" in config:
@@ -120,6 +144,13 @@ class SettingsTab(QWidget):
             self.gpt_model.setText(model_config.get("gpt_model", "gpt-4-turbo"))
             self.claude_model.setText(model_config.get("claude_model", "claude-3-opus-20240229"))
             self.gemini_model.setText(model_config.get("gemini_model", "gemini-2.0-flash"))
+            self.custom_openai_model.setText(model_config.get("custom_openai_model", ""))
+
+        # 加载自定义OpenAI API设置
+        if "CUSTOM_OPENAI" in config:
+            custom_openai_config = config["CUSTOM_OPENAI"]
+            self.custom_openai_enabled.setChecked(custom_openai_config.getboolean("enabled", False))
+            self.custom_openai_url.setText(custom_openai_config.get("api_url", ""))
 
     def save_settings(self):
         """保存设置"""
@@ -140,6 +171,7 @@ class SettingsTab(QWidget):
         config["API_KEYS"]["gpt_api_key"] = self.gpt_api_key.text()
         config["API_KEYS"]["claude_api_key"] = self.claude_api_key.text()
         config["API_KEYS"]["gemini_api_key"] = self.gemini_api_key.text()
+        config["API_KEYS"]["custom_openai_api_key"] = self.custom_openai_api_key.text()
 
         # 保存模型设置
         if "MODELS" not in config:
@@ -148,6 +180,14 @@ class SettingsTab(QWidget):
         config["MODELS"]["gpt_model"] = self.gpt_model.text()
         config["MODELS"]["claude_model"] = self.claude_model.text()
         config["MODELS"]["gemini_model"] = self.gemini_model.text()
+        config["MODELS"]["custom_openai_model"] = self.custom_openai_model.text()
+
+        # 保存自定义OpenAI API设置
+        if "CUSTOM_OPENAI" not in config:
+            config["CUSTOM_OPENAI"] = {}
+
+        config["CUSTOM_OPENAI"]["enabled"] = str(self.custom_openai_enabled.isChecked()).lower()
+        config["CUSTOM_OPENAI"]["api_url"] = self.custom_openai_url.text()
 
         # 保存配置
         self.config_manager.save_config()
