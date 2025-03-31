@@ -551,7 +551,7 @@ class ChapterOutlineTab(QWidget):
             f"AI生成{field_name}",
             field_name,
             current_text,
-            models=["GPT", "Claude", "Gemini", "自定义OpenAI"],
+            models=["GPT", "Claude", "Gemini", "自定义OpenAI", "ModelScope"],
             default_model="GPT"
         )
         if dialog.exec() == QDialog.DialogCode.Accepted:

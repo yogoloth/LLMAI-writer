@@ -171,7 +171,7 @@ class CharacterTab(QWidget):
         ai_button_layout.addWidget(self.generate_button)
 
         self.model_combo = QComboBox()
-        self.model_combo.addItems(["GPT", "Claude", "Gemini"])
+        self.model_combo.addItems(["GPT", "Claude", "Gemini", "自定义OpenAI", "ModelScope"])
         ai_button_layout.addWidget(self.model_combo)
 
         character_layout.addLayout(ai_button_layout)
@@ -435,7 +435,21 @@ class CharacterTab(QWidget):
         """
 
         # 获取模型
-        model_type = self.model_combo.currentText().lower()
+        model_text = self.model_combo.currentText().lower()
+        # 转换为模型类型
+        if model_text == "gpt":
+            model_type = "gpt"
+        elif model_text == "claude":
+            model_type = "claude"
+        elif model_text == "gemini":
+            model_type = "gemini"
+        elif model_text == "自定义openai":
+            model_type = "custom_openai"
+        elif model_text == "modelscope":
+            model_type = "modelscope"
+        else:
+            model_type = "gpt"  # 默认使用GPT
+
         try:
             model = self.main_window.get_model(model_type)
         except ValueError as e:

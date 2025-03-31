@@ -46,7 +46,7 @@ class ChapterTab(QWidget):
         model_layout = QFormLayout()
 
         self.model_combo = QComboBox()
-        self.model_combo.addItems(["GPT", "Claude", "Gemini"])
+        self.model_combo.addItems(["GPT", "Claude", "Gemini", "自定义OpenAI", "ModelScope"])
         model_layout.addRow("AI模型:", self.model_combo)
 
         model_group.setLayout(model_layout)
@@ -209,6 +209,10 @@ class ChapterTab(QWidget):
             return "claude"
         elif model_text == "gemini":
             return "gemini"
+        elif model_text == "自定义openai":
+            return "custom_openai"
+        elif model_text == "modelscope":
+            return "modelscope"
         else:
             return "gpt"  # 默认使用GPT
 
