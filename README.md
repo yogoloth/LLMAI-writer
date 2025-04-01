@@ -54,6 +54,8 @@ pip install -r requirements.txt
 
 ## 📖 使用指南
 
+> **小贴士：** 如果您此前从未接触过代码，建议您使用 Cursor、WindSurf、Cline、RooCode、Trae、Augment 等工具询问 AI 大模型，它们会自动帮您解释代码的功能和使用方法。
+
 ### 启动程序
 ```bash
 python main.py
