@@ -97,7 +97,7 @@ class AIGenerateDialog(QDialog):
             if self.field_name == "卷简介" and self.context_info.get("volume_title"):
                 default_prompt += f"卷标题：{self.context_info.get('volume_title')}\n\n"
 
-            # 如果是章节摘要，添加卷标题、卷简介和章节标题信息
+            # 如果是章节摘要，添加卷标题、卷简介、章节标题信息以及前10章和后3章的标题和摘要
             if self.field_name == "章节摘要":
                 if self.context_info.get("volume_title"):
                     default_prompt += f"卷标题：{self.context_info.get('volume_title')}\n"
@@ -105,7 +105,62 @@ class AIGenerateDialog(QDialog):
                     default_prompt += f"卷简介：{self.context_info.get('volume_description')}\n"
                 if self.context_info.get("chapter_title"):
                     default_prompt += f"章节标题：{self.context_info.get('chapter_title')}\n"
+                if self.context_info.get("chapter_number"):
+                    default_prompt += f"当前章节序号：第{self.context_info.get('chapter_number')}章\n"
                 default_prompt += "\n"
+
+                # 添加前10章的标题和摘要
+                previous_chapters = self.context_info.get("previous_chapters", [])
+                if previous_chapters:
+                    default_prompt += "前面章节的标题和摘要：\n"
+                    for i, prev_chapter in enumerate(previous_chapters):
+                        default_prompt += f"- {prev_chapter.get('title')}: {prev_chapter.get('summary')}\n"
+                    default_prompt += "\n"
+
+                # 添加后3章的标题和摘要
+                next_chapters = self.context_info.get("next_chapters", [])
+                if next_chapters:
+                    default_prompt += "后面章节的标题和摘要：\n"
+                    for i, next_chapter in enumerate(next_chapters):
+                        default_prompt += f"- {next_chapter.get('title')}: {next_chapter.get('summary')}\n"
+                    default_prompt += "\n"
+
+            # 如果是章节内容，添加章节相关信息、前10章和后3章的标题和摘要，以及前一章的内容
+            if self.field_name == "章节内容":
+                if self.context_info.get("volume_title"):
+                    default_prompt += f"卷标题：{self.context_info.get('volume_title')}\n"
+                if self.context_info.get("volume_description"):
+                    default_prompt += f"卷简介：{self.context_info.get('volume_description')}\n"
+                if self.context_info.get("chapter_title"):
+                    default_prompt += f"章节标题：{self.context_info.get('chapter_title')}\n"
+                if self.context_info.get("chapter_number"):
+                    default_prompt += f"当前章节序号：第{self.context_info.get('chapter_number')}章\n"
+                default_prompt += "\n"
+
+                # 添加前10章的标题和摘要
+                previous_chapters = self.context_info.get("previous_chapters", [])
+                if previous_chapters:
+                    default_prompt += "前面章节的标题和摘要：\n"
+                    for i, prev_chapter in enumerate(previous_chapters):
+                        default_prompt += f"- {prev_chapter.get('title')}: {prev_chapter.get('summary')}\n"
+                    default_prompt += "\n"
+
+                # 添加前一章的内容
+                previous_chapter_content = self.context_info.get("previous_chapter_content", "")
+                if previous_chapter_content:
+                    # 如果前一章内容过长，只取前2000个字符
+                    if len(previous_chapter_content) > 2000:
+                        previous_chapter_content = previous_chapter_content[:2000] + "...(省略后续内容)"
+                    default_prompt += "前一章的内容：\n\n"
+                    default_prompt += f"{previous_chapter_content}\n\n"
+
+                # 添加后3章的标题和摘要
+                next_chapters = self.context_info.get("next_chapters", [])
+                if next_chapters:
+                    default_prompt += "后面章节的标题和摘要：\n"
+                    for i, next_chapter in enumerate(next_chapters):
+                        default_prompt += f"- {next_chapter.get('title')}: {next_chapter.get('summary')}\n"
+                    default_prompt += "\n"
 
         # 添加当前文本和要求
         default_prompt += f"{self.current_text}\n\n要求：\n1. 保持原有风格\n2. 更加生动详细\n3. 逻辑连贯\n4. 与小说的整体设定保持一致"

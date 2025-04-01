@@ -265,6 +265,51 @@ class ChapterTab(QWidget):
                 "worldbuilding": self.outline.get("worldbuilding", "")
             }
 
+        # 获取上下文信息
+        context_info = {}
+        volumes = self.outline.get("volumes", [])
+        if self.current_volume_index < len(volumes):
+            volume = volumes[self.current_volume_index]
+            context_info["volume_title"] = volume.get("title", "")
+            context_info["volume_description"] = volume.get("description", "")
+
+            chapters = volume.get("chapters", [])
+            if self.current_chapter_index < len(chapters):
+                chapter = chapters[self.current_chapter_index]
+                context_info["chapter_title"] = chapter.get("title", "")
+                context_info["chapter_number"] = self.current_chapter_index + 1
+
+                # 添加前10章的标题和摘要
+                previous_chapters = []
+                start_idx = max(0, self.current_chapter_index - 10)
+                for i in range(start_idx, self.current_chapter_index):
+                    if i < len(chapters):
+                        prev_chapter = chapters[i]
+                        previous_chapters.append({
+                            "title": prev_chapter.get("title", ""),
+                            "summary": prev_chapter.get("summary", "")
+                        })
+                context_info["previous_chapters"] = previous_chapters
+
+                # 添加前一章的内容
+                if self.current_chapter_index > 0:
+                    prev_chapter_index = self.current_chapter_index - 1
+                    prev_chapter_content = self.main_window.get_chapter(self.current_volume_index, prev_chapter_index)
+                    if prev_chapter_content:
+                        context_info["previous_chapter_content"] = prev_chapter_content
+
+                # 添加后3章的标题和摘要
+                next_chapters = []
+                end_idx = min(len(chapters), self.current_chapter_index + 4)
+                for i in range(self.current_chapter_index + 1, end_idx):
+                    if i < len(chapters):
+                        next_chapter = chapters[i]
+                        next_chapters.append({
+                            "title": next_chapter.get("title", ""),
+                            "summary": next_chapter.get("summary", "")
+                        })
+                context_info["next_chapters"] = next_chapters
+
         # 获取当前章节信息
         current_text = self.output_edit.toPlainText()
         chapter_info = self.info_edit.toPlainText()
@@ -276,7 +321,8 @@ class ChapterTab(QWidget):
             current_text,
             models=["GPT", "Claude", "Gemini", "自定义OpenAI", "ModelScope"],
             default_model="GPT",
-            outline_info=outline_info
+            outline_info=outline_info,
+            context_info=context_info
         )
 
         if dialog.exec() == QDialog.DialogCode.Accepted:

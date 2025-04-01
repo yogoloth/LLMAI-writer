@@ -324,6 +324,14 @@ class ChapterOutlineTab(QWidget):
             if "chapters" not in volume:
                 volume["chapters"] = []
 
+            # 获取当前章节数量，用于生成章节序号
+            chapter_count = len(volume["chapters"])
+            chapter_number = chapter_count + 1
+
+            # 如果标题中没有包含章节序号，自动添加
+            if not title.startswith(f"第{chapter_number}章") and not title.startswith(f"第{chapter_number} 章"):
+                title = f"第{chapter_number}章：{title}"
+
             new_chapter = {
                 "title": title,
                 "summary": ""
@@ -517,8 +525,58 @@ class ChapterOutlineTab(QWidget):
         chapter = chapters.pop(from_index)
         chapters.insert(to_index, chapter)
 
+        # 更新所有章节的序号
+        self._update_chapter_numbers()
+
         # 更新当前选中的章节
         self.current_chapter_index = to_index
+
+    def _update_chapter_numbers(self):
+        """更新所有章节的序号"""
+        if self.current_volume_index < 0:
+            return
+
+        volumes = self.outline.get("volumes", [])
+        if self.current_volume_index < len(volumes):
+            volume = volumes[self.current_volume_index]
+            chapters = volume.get("chapters", [])
+
+            # 清空章节列表
+            self.chapter_list.clear()
+
+            # 更新每个章节的标题和序号
+            for i, chapter in enumerate(chapters):
+                # 提取原标题（去除序号部分）
+                title = chapter.get("title", "")
+                chapter_number = i + 1
+
+                # 如果标题包含“第”和“章”，则提取内容部分
+                if "第" in title and "章" in title:
+                    # 尝试提取“章：”后面的内容
+                    parts = title.split("章：", 1)
+                    if len(parts) > 1:
+                        title = parts[1]
+                    else:
+                        # 尝试提取“章 ”后面的内容
+                        parts = title.split("章 ", 1)
+                        if len(parts) > 1:
+                            title = parts[1]
+                        else:
+                            # 如果上述方法都失败，则保留原标题
+                            pass
+
+                # 更新章节标题
+                new_title = f"第{chapter_number}章：{title}"
+                chapter["title"] = new_title
+
+                # 更新章节列表
+                item = QListWidgetItem(new_title)
+                item.setData(Qt.ItemDataRole.UserRole, i)
+                self.chapter_list.addItem(item)
+
+            # 选中当前章节
+            if self.current_chapter_index >= 0 and self.current_chapter_index < self.chapter_list.count():
+                self.chapter_list.setCurrentRow(self.current_chapter_index)
 
     def _save_outline(self):
         """保存大纲"""
@@ -568,7 +626,7 @@ class ChapterOutlineTab(QWidget):
                 volume = volumes[self.current_volume_index]
                 context_info["volume_title"] = volume.get("title", "")
 
-        # 如果是章节摘要，添加卷标题、卷简介和章节标题信息
+        # 如果是章节摘要，添加卷标题、卷简介、章节标题信息以及前10章和后3章的标题和摘要
         if field_name == "章节摘要" and self.current_volume_index >= 0 and self.current_chapter_index >= 0:
             volumes = self.outline.get("volumes", [])
             if self.current_volume_index < len(volumes):
@@ -580,6 +638,31 @@ class ChapterOutlineTab(QWidget):
                 if self.current_chapter_index < len(chapters):
                     chapter = chapters[self.current_chapter_index]
                     context_info["chapter_title"] = chapter.get("title", "")
+                    context_info["chapter_number"] = self.current_chapter_index + 1
+
+                    # 添加前10章的标题和摘要
+                    previous_chapters = []
+                    start_idx = max(0, self.current_chapter_index - 10)
+                    for i in range(start_idx, self.current_chapter_index):
+                        if i < len(chapters):
+                            prev_chapter = chapters[i]
+                            previous_chapters.append({
+                                "title": prev_chapter.get("title", ""),
+                                "summary": prev_chapter.get("summary", "")
+                            })
+                    context_info["previous_chapters"] = previous_chapters
+
+                    # 添加后3章的标题和摘要
+                    next_chapters = []
+                    end_idx = min(len(chapters), self.current_chapter_index + 4)
+                    for i in range(self.current_chapter_index + 1, end_idx):
+                        if i < len(chapters):
+                            next_chapter = chapters[i]
+                            next_chapters.append({
+                                "title": next_chapter.get("title", ""),
+                                "summary": next_chapter.get("summary", "")
+                            })
+                    context_info["next_chapters"] = next_chapters
 
         dialog = AIGenerateDialog(
             self,
