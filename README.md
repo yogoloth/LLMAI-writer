@@ -1,7 +1,7 @@
 # LLMAI-writer
 
 <p align="center">
-  <strong style="font-size: 2em;">LLMAI-writer</strong>
+  <img src="resources/icon.png" alt="LLMAI-writer Logo" width="200"/>
 </p>
 
 LLMAI-writer 是一个功能强大的 AI 辅助小说创作工具，利用最先进的大型语言模型帮助作家构思、规划和创作小说。无论您是经验丰富的作家还是初学者，LLMAI-writer 都能帮助您更高效地完成创作过程。
