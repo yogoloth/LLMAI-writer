@@ -107,6 +107,11 @@ class AIGenerateDialog(QDialog):
                     default_prompt += f"章节标题：{self.context_info.get('chapter_title')}\n"
                 if self.context_info.get("chapter_number"):
                     default_prompt += f"当前章节序号：第{self.context_info.get('chapter_number')}章\n"
+
+                # 添加当前章节摘要（如果有）
+                current_summary = self.current_text.strip()
+                if current_summary:
+                    default_prompt += f"当前章节摘要：{current_summary}\n"
                 default_prompt += "\n"
 
                 # 添加前10章的标题和摘要
@@ -163,7 +168,13 @@ class AIGenerateDialog(QDialog):
                     default_prompt += "\n"
 
         # 添加当前文本和要求
-        default_prompt += f"{self.current_text}\n\n要求：\n1. 保持原有风格\n2. 更加生动详细\n3. 逻辑连贯\n4. 与小说的整体设定保持一致"
+        current_text = self.current_text.strip()
+        if current_text and self.field_name == "章节内容":
+            default_prompt += f"当前章节内容：\n{current_text}\n\n"
+        elif current_text:
+            default_prompt += f"{current_text}\n\n"
+
+        default_prompt += "要求：\n1. 保持原有风格\n2. 更加生动详细\n3. 逻辑连贯\n4. 与小说的整体设定保持一致"
 
         self.prompt_edit.setPlainText(default_prompt)
         prompt_layout.addWidget(self.prompt_edit)
