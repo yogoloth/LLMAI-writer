@@ -132,6 +132,12 @@ class AIGenerateDialog(QDialog):
 
             # 如果是章节内容，添加章节相关信息、前10章和后3章的标题和摘要，以及前一章的内容
             if self.field_name == "章节内容":
+                # 添加明确的任务说明
+                chapter_number = self.context_info.get("chapter_number", "")
+                chapter_title = self.context_info.get("chapter_title", "")
+
+                default_prompt += f"请生成第{chapter_number}章《{chapter_title}》的完整章节内容\n\n"
+
                 if self.context_info.get("volume_title"):
                     default_prompt += f"卷标题：{self.context_info.get('volume_title')}\n"
                 if self.context_info.get("volume_description"):
@@ -170,11 +176,15 @@ class AIGenerateDialog(QDialog):
         # 添加当前文本和要求
         current_text = self.current_text.strip()
         if current_text and self.field_name == "章节内容":
-            default_prompt += f"当前章节内容：\n{current_text}\n\n"
+            default_prompt += f"当前进度：\n{current_text}\n\n"
         elif current_text:
             default_prompt += f"{current_text}\n\n"
 
-        default_prompt += "要求：\n1. 保持原有风格\n2. 更加生动详细\n3. 逻辑连贯\n4. 与小说的整体设定保持一致"
+        # 添加章节内容生成的特殊要求
+        if self.field_name == "章节内容":
+            default_prompt += "要求：\n1. 生成完整的章节内容\n2. 保持原有风格\n3. 更加生动详细\n4. 逻辑连贯\n5. 与小说的整体设定保持一致\n6. 与前后章节内容保持连贯"
+        else:
+            default_prompt += "要求：\n1. 保持原有风格\n2. 更加生动详细\n3. 逻辑连贯\n4. 与小说的整体设定保持一致"
 
         self.prompt_edit.setPlainText(default_prompt)
         prompt_layout.addWidget(self.prompt_edit)
