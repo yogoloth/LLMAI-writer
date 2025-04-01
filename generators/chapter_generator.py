@@ -29,8 +29,6 @@ class ChapterGenerator:
             生成的章节内容
         """
         prompt = self._create_chapter_prompt(outline, volume_index, chapter_index)
-        max_tokens = None
-        temperature = None
 
         if callback:
             # 流式生成

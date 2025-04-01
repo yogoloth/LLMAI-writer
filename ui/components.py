@@ -31,7 +31,7 @@ class AIGenerateDialog(QDialog):
     """
 
     def __init__(self, parent=None, title="AI生成", field_name="内容", current_text="",
-                 models=None, default_model="GPT"):
+                 models=None, default_model="GPT", outline_info=None, context_info=None):
         """
         初始化AI生成对话框
 
@@ -42,6 +42,8 @@ class AIGenerateDialog(QDialog):
             current_text: 当前文本
             models: 可用的模型列表
             default_model: 默认选择的模型
+            outline_info: 总大纲信息，包含标题、中心思想、故事梦概和世界观设定
+            context_info: 上下文信息，如卷标题、卷简介、章节标题等
         """
         super().__init__(parent)
         self.setWindowTitle(title)
@@ -52,6 +54,8 @@ class AIGenerateDialog(QDialog):
         self.generation_thread = None
         self.models = models or ["GPT", "Claude", "Gemini", "自定义OpenAI", "ModelScope"]
         self.default_model = default_model if default_model in self.models else self.models[0]
+        self.outline_info = outline_info or {}
+        self.context_info = context_info or {}
 
         # 初始化UI
         self._init_ui()
@@ -71,7 +75,41 @@ class AIGenerateDialog(QDialog):
         prompt_layout.addWidget(prompt_label)
 
         self.prompt_edit = QTextEdit()
-        default_prompt = f"请根据以下内容，生成一个新的{self.field_name}：\n\n{self.current_text}\n\n要求：\n1. 保持原有风格\n2. 更加生动详细\n3. 逻辑连贯"
+
+        # 构建默认提示词
+        default_prompt = f"请根据以下内容，生成一个新的{self.field_name}：\n\n"
+
+        # 添加总大纲信息（如果有）
+        if self.outline_info:
+            if self.outline_info.get("title"):
+                default_prompt += f"小说标题：{self.outline_info.get('title')}\n"
+            if self.outline_info.get("theme"):
+                default_prompt += f"中心思想：{self.outline_info.get('theme')}\n"
+            if self.outline_info.get("synopsis"):
+                default_prompt += f"故事梦概：{self.outline_info.get('synopsis')}\n"
+            if self.outline_info.get("worldbuilding"):
+                default_prompt += f"世界观设定：{self.outline_info.get('worldbuilding')}\n"
+            default_prompt += "\n"
+
+        # 添加上下文信息（如果有）
+        if self.context_info:
+            # 如果是卷简介，添加卷标题信息
+            if self.field_name == "卷简介" and self.context_info.get("volume_title"):
+                default_prompt += f"卷标题：{self.context_info.get('volume_title')}\n\n"
+
+            # 如果是章节摘要，添加卷标题、卷简介和章节标题信息
+            if self.field_name == "章节摘要":
+                if self.context_info.get("volume_title"):
+                    default_prompt += f"卷标题：{self.context_info.get('volume_title')}\n"
+                if self.context_info.get("volume_description"):
+                    default_prompt += f"卷简介：{self.context_info.get('volume_description')}\n"
+                if self.context_info.get("chapter_title"):
+                    default_prompt += f"章节标题：{self.context_info.get('chapter_title')}\n"
+                default_prompt += "\n"
+
+        # 添加当前文本和要求
+        default_prompt += f"{self.current_text}\n\n要求：\n1. 保持原有风格\n2. 更加生动详细\n3. 逻辑连贯\n4. 与小说的整体设定保持一致"
+
         self.prompt_edit.setPlainText(default_prompt)
         prompt_layout.addWidget(self.prompt_edit)
 
@@ -170,11 +208,45 @@ class AIGenerateDialog(QDialog):
 
     def _on_template_changed(self, index):
         """模板选择变更事件"""
+        # 构建基本提示词前缀（包含总大纲信息和上下文信息）
+        prefix = f"请根据以下内容，生成一个新的{self.field_name}：\n\n"
+
+        # 添加总大纲信息
+        if self.outline_info:
+            if self.outline_info.get("title"):
+                prefix += f"小说标题：{self.outline_info.get('title')}\n"
+            if self.outline_info.get("theme"):
+                prefix += f"中心思想：{self.outline_info.get('theme')}\n"
+            if self.outline_info.get("synopsis"):
+                prefix += f"故事梦概：{self.outline_info.get('synopsis')}\n"
+            if self.outline_info.get("worldbuilding"):
+                prefix += f"世界观设定：{self.outline_info.get('worldbuilding')}\n"
+            prefix += "\n"
+
+        # 添加上下文信息
+        if self.context_info:
+            # 如果是卷简介，添加卷标题信息
+            if self.field_name == "卷简介" and self.context_info.get("volume_title"):
+                prefix += f"卷标题：{self.context_info.get('volume_title')}\n\n"
+
+            # 如果是章节摘要，添加卷标题、卷简介和章节标题信息
+            if self.field_name == "章节摘要":
+                if self.context_info.get("volume_title"):
+                    prefix += f"卷标题：{self.context_info.get('volume_title')}\n"
+                if self.context_info.get("volume_description"):
+                    prefix += f"卷简介：{self.context_info.get('volume_description')}\n"
+                if self.context_info.get("chapter_title"):
+                    prefix += f"章节标题：{self.context_info.get('chapter_title')}\n"
+                prefix += "\n"
+
+        # 添加当前文本
+        content = f"{self.current_text}\n\n"
+
         templates = {
-            0: f"请根据以下内容，生成一个新的{self.field_name}：\n\n{self.current_text}\n\n要求：\n1. 保持原有风格\n2. 更加生动详细\n3. 逻辑连贯",
-            1: f"请详细分析以下内容，并生成一个更加丰富、详尽的{self.field_name}：\n\n{self.current_text}\n\n要求：\n1. 保持原有风格和主题\n2. 增加细节描写和背景信息\n3. 使用丰富的修辞手法\n4. 确保逻辑连贯和情节合理",
-            2: f"请简洁地概括以下内容，并生成一个精炼的{self.field_name}：\n\n{self.current_text}\n\n要求：\n1. 保持核心内容和主题\n2. 使用简洁有力的语言\n3. 去除冗余信息\n4. 突出重点",
-            3: f"请发挥创意，基于以下内容生成一个独特新颖的{self.field_name}：\n\n{self.current_text}\n\n要求：\n1. 保持基本主题\n2. 加入创新的元素和视角\n3. 使用富有想象力的语言\n4. 创造出令人惊喜的内容"
+            0: prefix + content + "要求：\n1. 保持原有风格\n2. 更加生动详细\n3. 逻辑连贯\n4. 与小说的整体设定保持一致",
+            1: prefix + content + "要求：\n1. 保持原有风格和主题\n2. 增加细节描写和背景信息\n3. 使用丰富的修辞手法\n4. 确保逻辑连贯和情节合理\n5. 与小说的整体设定保持一致",
+            2: prefix + content + "要求：\n1. 保持核心内容和主题\n2. 使用简洁有力的语言\n3. 去除冗余信息\n4. 突出重点\n5. 与小说的整体设定保持一致",
+            3: prefix + content + "要求：\n1. 保持基本主题\n2. 加入创新的元素和视角\n3. 使用富有想象力的语言\n4. 创造出令人惊喜的内容\n5. 与小说的整体设定保持一致"
         }
 
         if index in templates:

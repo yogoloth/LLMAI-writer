@@ -1,14 +1,11 @@
-import asyncio
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QTextEdit,
+    QWidget, QVBoxLayout, QHBoxLayout, QTextEdit,
     QPushButton, QComboBox, QGroupBox, QFormLayout,
     QMessageBox, QSplitter, QListWidget, QListWidgetItem,
-    QProgressBar
+    QDialog
 )
-from PyQt6.QtCore import Qt, pyqtSignal, pyqtSlot
+from PyQt6.QtCore import Qt
 
-from generators.chapter_generator import ChapterGenerator
-from utils.async_utils import GenerationThread, ProgressIndicator
 from ui.components import AIGenerateDialog
 
 
@@ -78,10 +75,7 @@ class ChapterTab(QWidget):
         button_group = QGroupBox("操作")
         button_layout = QVBoxLayout()
 
-        self.generate_button = QPushButton("生成章节")
-        self.generate_button.clicked.connect(self.generate_chapter)
-        self.generate_button.setEnabled(False)
-        button_layout.addWidget(self.generate_button)
+        # 生成章节按钮已移除，使用AI辅助编辑按钮替代
 
         self.save_button = QPushButton("保存章节")
         self.save_button.clicked.connect(self.save_chapter)
@@ -117,11 +111,16 @@ class ChapterTab(QWidget):
         self.output_edit = QTextEdit()
         output_layout.addWidget(self.output_edit)
 
-        # 添加进度条
-        self.progress_bar = QProgressBar()
-        self.progress_bar.setRange(0, 0)  # 设置为不确定模式
-        self.progress_bar.setVisible(False)
-        output_layout.addWidget(self.progress_bar)
+        # 添加AI生成按钮
+        ai_button_layout = QHBoxLayout()
+        self.ai_generate_button = QPushButton("AI辅助编辑")
+        self.ai_generate_button.clicked.connect(self._generate_with_ai)
+        self.ai_generate_button.setEnabled(False)
+        ai_button_layout.addWidget(self.ai_generate_button)
+        ai_button_layout.addStretch()
+        output_layout.addLayout(ai_button_layout)
+
+        # 进度条已移除，使用AI生成对话框中的进度条
 
         output_group.setLayout(output_layout)
         right_layout.addWidget(output_group)
@@ -194,8 +193,10 @@ class ChapterTab(QWidget):
                 else:
                     self.output_edit.clear()
 
-                # 启用生成按钮
-                self.generate_button.setEnabled(True)
+                # 生成按钮已移除
+
+                # 启用AI辅助编辑按钮
+                self.ai_generate_button.setEnabled(True)
 
                 # 如果有内容，启用保存按钮
                 self.save_button.setEnabled(bool(self.output_edit.toPlainText()))
@@ -223,98 +224,9 @@ class ChapterTab(QWidget):
         scrollbar = self.output_edit.verticalScrollBar()
         scrollbar.setValue(scrollbar.maximum())
 
-    @pyqtSlot(str)
-    def _on_progress(self, chunk):
-        """处理进度信号"""
-        # 注意：不需要再次调用_stream_callback，因为生成器方法中已经调用了
-        # 这里仅用于调试目的
-        # self._stream_callback(chunk)
-        pass
+    # 生成章节相关的信号处理方法已移除，使用 _generate_with_ai 方法替代
 
-    @pyqtSlot(object)
-    def _on_finished(self, result):
-        """处理完成信号"""
-        # 隐藏进度条
-        self.progress_bar.setVisible(False)
-
-        # 更新UI
-        self.generate_button.setEnabled(True)
-        self.save_button.setEnabled(True)
-
-        # 更新状态栏
-        self.main_window.status_bar_manager.show_message("章节生成完成")
-
-        # 如果结果不是字符串，尝试转换
-        if not isinstance(result, str):
-            try:
-                result = str(result)
-            except:
-                result = "无法解析结果"
-
-        # 保存章节内容
-        self.main_window.set_chapter(self.current_volume_index, self.current_chapter_index, result)
-
-        # 显示完成消息
-        QMessageBox.information(self, "生成完成", "章节生成完成！")
-
-    @pyqtSlot(str)
-    def _on_error(self, error_message):
-        """处理错误信号"""
-        # 隐藏进度条
-        self.progress_bar.setVisible(False)
-
-        # 更新UI
-        self.generate_button.setEnabled(True)
-
-        # 更新状态栏
-        self.main_window.status_bar_manager.show_message("章节生成失败")
-
-        # 显示错误消息
-        QMessageBox.warning(self, "生成失败", f"生成章节时出错: {error_message}")
-
-    def generate_chapter(self):
-        """生成章节"""
-        if self.current_volume_index < 0 or self.current_chapter_index < 0:
-            QMessageBox.warning(self, "生成失败", "请先选择一个章节")
-            return
-
-        # 获取模型
-        model_type = self._get_model_type()
-        try:
-            model = self.main_window.get_model(model_type)
-        except ValueError as e:
-            QMessageBox.warning(self, "模型错误", str(e))
-            return
-
-        # 创建章节生成器
-        self.chapter_generator = ChapterGenerator(model, self.main_window.config_manager)
-
-        # 清空输出
-        self.output_edit.clear()
-
-        # 禁用生成按钮
-        self.generate_button.setEnabled(False)
-
-        # 显示进度条
-        self.progress_bar.setVisible(True)
-
-        # 更新状态栏
-        self.main_window.status_bar_manager.show_message("正在生成章节...")
-
-        # 创建并启动生成线程
-        self.generation_thread = GenerationThread(
-            self.chapter_generator.generate_chapter,
-            (self.outline, self.current_volume_index, self.current_chapter_index),
-            {"callback": self._stream_callback}
-        )
-
-        # 连接信号
-        self.generation_thread.progress_signal.connect(self._on_progress)
-        self.generation_thread.finished_signal.connect(self._on_finished)
-        self.generation_thread.error_signal.connect(self._on_error)
-
-        # 启动线程
-        self.generation_thread.start()
+    # generate_chapter 方法已移除，使用 _generate_with_ai 方法替代
 
     def save_chapter(self):
         """保存章节"""
@@ -336,3 +248,39 @@ class ChapterTab(QWidget):
 
         # 启用保存按钮
         self.save_button.setEnabled(True)
+
+    def _generate_with_ai(self):
+        """使用AI生成内容"""
+        if self.current_volume_index < 0 or self.current_chapter_index < 0:
+            QMessageBox.warning(self, "生成失败", "请先选择一个章节")
+            return
+
+        # 获取总大纲信息
+        outline_info = {}
+        if self.outline:
+            outline_info = {
+                "title": self.outline.get("title", ""),
+                "theme": self.outline.get("theme", ""),
+                "synopsis": self.outline.get("synopsis", ""),
+                "worldbuilding": self.outline.get("worldbuilding", "")
+            }
+
+        # 获取当前章节信息
+        current_text = self.output_edit.toPlainText()
+        chapter_info = self.info_edit.toPlainText()
+
+        dialog = AIGenerateDialog(
+            self,
+            "AI生成章节内容",
+            "章节内容",
+            current_text,
+            models=["GPT", "Claude", "Gemini", "自定义OpenAI", "ModelScope"],
+            default_model="GPT",
+            outline_info=outline_info
+        )
+
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            result = dialog.get_result()
+            if result:
+                self.output_edit.setPlainText(result)
+                self.save_button.setEnabled(True)

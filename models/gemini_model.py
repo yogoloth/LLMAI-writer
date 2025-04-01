@@ -79,7 +79,23 @@ class GeminiModel(AIModel):
         )
 
         # 处理流式响应
-        full_response = ""
+        async for chunk in self._process_stream(response_stream):
+            if callback:
+                callback(chunk)
+            yield chunk
+
+        # 异步生成器不能使用return返回值
+
+    async def _process_stream(self, response_stream):
+        """
+        处理Gemini流式响应
+
+        Args:
+            response_stream: Gemini流式响应
+
+        Yields:
+            文本块
+        """
         for chunk in response_stream:
             chunk_text = ""
             if hasattr(chunk, 'text'):
@@ -90,9 +106,7 @@ class GeminiModel(AIModel):
                 chunk_text = chunk.content.parts[0].text
 
             if chunk_text:
-                full_response += chunk_text
-                if callback:
-                    callback(chunk_text)
                 yield chunk_text
 
-        # 异步生成器不能使用return返回值
+            # 给异步事件循环一个机会执行
+            await asyncio.sleep(0)

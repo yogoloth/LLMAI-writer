@@ -38,8 +38,6 @@ class OutlineGenerator:
             生成的大纲（JSON格式）
         """
         prompt = self._create_outline_prompt(title, genre, theme, style, synopsis, volume_count, chapters_per_volume, words_per_chapter, protagonist_count, important_count, supporting_count, minor_count)
-        max_tokens = None
-        temperature = None
 
         if callback:
             # 流式生成
@@ -64,8 +62,6 @@ class OutlineGenerator:
             优化后的大纲（JSON格式）
         """
         prompt = self._create_optimization_prompt(outline)
-        max_tokens = None
-        temperature = None
 
         if callback:
             # 流式生成
@@ -78,31 +74,7 @@ class OutlineGenerator:
             response = await self.ai_model.generate(prompt)
             return self._parse_outline(response)
 
-    async def expand_chapters(self, outline, callback=None):
-        """
-        扩展章节列表
 
-        Args:
-            outline: 小说大纲（JSON格式）
-            callback: 回调函数，用于接收流式生成的内容
-
-        Returns:
-            扩展后的大纲（JSON格式）
-        """
-        prompt = self._create_chapter_expansion_prompt(outline)
-        max_tokens = None
-        temperature = None
-
-        if callback:
-            # 流式生成
-            full_response = ""
-            async for chunk in self.ai_model.generate_stream(prompt, callback):
-                full_response += chunk
-            return self._parse_outline(full_response)
-        else:
-            # 非流式生成
-            response = await self.ai_model.generate(prompt)
-            return self._parse_outline(response)
 
     def _create_outline_prompt(self, title, genre, theme, style, synopsis, volume_count, chapters_per_volume, words_per_chapter, protagonist_count, important_count, supporting_count, minor_count):
         """创建大纲生成的提示词"""
@@ -211,22 +183,7 @@ class OutlineGenerator:
         请保持原有的JSON格式，只返回优化后的JSON内容，不要包含其他解释或说明。
         """
 
-    def _create_chapter_expansion_prompt(self, outline):
-        """创建章节扩展的提示词"""
-        outline_json = json.dumps(outline, ensure_ascii=False, indent=2)
 
-        return f"""
-        请基于以下小说大纲，将简略的章节扩展为更详细的章节列表：
-
-        {outline_json}
-
-        请进行以下扩展：
-        1. 可以保持原有章节不变，只添加详细内容
-        2. 也可以将原有章节扩展为更多的章节
-        3. 每个章节都应包含标题和详细摘要
-
-        请保持原有的JSON格式，只返回扩展后的JSON内容，不要包含其他解释或说明。
-        """
 
     def _parse_outline(self, response):
         """解析AI生成的大纲响应"""

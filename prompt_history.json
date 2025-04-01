@@ -167,5 +167,122 @@
       "volume_count": 3,
       "chapters_per_volume": 10
     }
+  },
+  {
+    "prompt": "大纲生成: 狗子 - 狗子",
+    "model": "gemini",
+    "result": "",
+    "timestamp": 1743436366.4269812,
+    "metadata": {
+      "title": "狗子",
+      "genre": "狗子",
+      "theme": "狗子",
+      "volume_count": 3,
+      "chapters_per_volume": 10
+    }
+  },
+  {
+    "prompt": "大纲生成: 狗子 - 狗子",
+    "model": "modelscope",
+    "result": "",
+    "timestamp": 1743436387.6052818,
+    "metadata": {
+      "title": "狗子",
+      "genre": "狗子",
+      "theme": "狗子",
+      "volume_count": 3,
+      "chapters_per_volume": 10
+    }
+  },
+  {
+    "prompt": "大纲生成: 数字 - 数字",
+    "model": "gemini",
+    "result": "",
+    "timestamp": 1743436548.9709768,
+    "metadata": {
+      "title": "数字",
+      "genre": "数字",
+      "theme": "数字",
+      "volume_count": 3,
+      "chapters_per_volume": 10
+    }
+  },
+  {
+    "prompt": "大纲生成: 傻子 - 傻子",
+    "model": "gemini",
+    "result": "",
+    "timestamp": 1743436843.8772635,
+    "metadata": {
+      "title": "傻子",
+      "genre": "傻子",
+      "theme": "傻子",
+      "volume_count": 3,
+      "chapters_per_volume": 10
+    }
+  },
+  {
+    "prompt": "大纲生成: 傻子 - 傻子",
+    "model": "modelscope",
+    "result": "",
+    "timestamp": 1743436862.6699936,
+    "metadata": {
+      "title": "傻子",
+      "genre": "傻子",
+      "theme": "傻子",
+      "volume_count": 3,
+      "chapters_per_volume": 10
+    }
+  },
+  {
+    "prompt": "大纲生成: 狗子 - 狗子",
+    "model": "gemini",
+    "result": "",
+    "timestamp": 1743508681.8064926,
+    "metadata": {
+      "title": "狗子",
+      "genre": "狗子",
+      "theme": "狗子",
+      "volume_count": 3,
+      "chapters_per_volume": 10
+    }
+  },
+  {
+    "prompt": "大纲生成: 狗子 - 狗子",
+    "model": "gemini",
+    "result": "",
+    "timestamp": 1743510124.7988305,
+    "metadata": {
+      "title": "狗子",
+      "genre": "狗子",
+      "theme": "狗子",
+      "volume_count": 3,
+      "chapters_per_volume": 10
+    }
+  },
+  {
+    "prompt": "大纲生成: 啊啊 - 啊啊",
+    "model": "gemini",
+    "result": "",
+    "timestamp": 1743510721.3269525,
+    "metadata": {
+      "title": "啊啊",
+      "genre": "啊啊",
+      "theme": "啊啊",
+      "volume_count": 3,
+      "chapters_per_volume": 10
+    }
+  },
+  {
+    "prompt": "大纲生成: 狗子 - 狗子",
+    "model": "gemini",
+    "result": "",
+    "timestamp": 1743511177.5204833,
+    "metadata": {
+      "title": "狗子",
+      "genre": "狗子",
+      "theme": "狗子",
+      "volume_count": 3,
+      "chapters_per_volume": 10
+    }
   }
 ]

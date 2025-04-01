@@ -142,13 +142,24 @@ class OutlineEditTab(QWidget):
 
     def _generate_with_ai(self, field_name, current_text, set_func):
         """使用AI生成内容"""
+        # 获取总大纲信息
+        outline_info = {}
+        if self.outline:
+            outline_info = {
+                "title": self.outline.get("title", ""),
+                "theme": self.outline.get("theme", ""),
+                "synopsis": self.outline.get("synopsis", ""),
+                "worldbuilding": self.outline.get("worldbuilding", "")
+            }
+
         dialog = AIGenerateDialog(
             self,
             f"AI生成{field_name}",
             field_name,
             current_text,
             models=["GPT", "Claude", "Gemini", "自定义OpenAI", "ModelScope"],
-            default_model="GPT"
+            default_model="GPT",
+            outline_info=outline_info
         )
         if dialog.exec() == QDialog.DialogCode.Accepted:
             result = dialog.get_result()

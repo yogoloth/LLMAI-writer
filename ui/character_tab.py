@@ -397,11 +397,31 @@ class CharacterTab(QWidget):
         age = age_edit.text().strip()
         description = desc_edit.toPlainText().strip()
 
+        # 获取总大纲信息
+        outline = self.main_window.get_outline()
+        outline_info = ""
+        if outline:
+            if outline.get("title"):
+                outline_info += f"小说标题：{outline.get('title')}\n"
+            if outline.get("theme"):
+                outline_info += f"中心思想：{outline.get('theme')}\n"
+            if outline.get("synopsis"):
+                outline_info += f"故事梦概：{outline.get('synopsis')}\n"
+            if outline.get("worldbuilding"):
+                outline_info += f"世界观设定：{outline.get('worldbuilding')}\n"
+
         # 构建提示词
         prompt = f"""
         请为我生成一个详细的角色设定，角色类型为{character_type}。
 
         """
+
+        # 添加总大纲信息（如果有）
+        if outline_info:
+            prompt += f"""
+            小说信息：
+            {outline_info}
+            """
 
         if name:
             prompt += f"角色姓名: {name}\n"
@@ -431,6 +451,7 @@ class CharacterTab(QWidget):
         - goals: 目标动机（详细描述）
 
         请确保生成的角色设定丰富、合理、有深度，并且符合角色类型的特点。
+        请确保角色设定与小说的整体设定保持一致。
         只返回JSON格式的内容，不要包含其他解释或说明。
         """
 

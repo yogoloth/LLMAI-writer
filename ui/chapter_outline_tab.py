@@ -247,7 +247,8 @@ class ChapterOutlineTab(QWidget):
         if index < len(volumes):
             volume = volumes[index]
             self.volume_title_edit.setText(volume.get("title", f"第{index+1}卷"))
-            self.volume_intro_edit.setPlainText(volume.get("introduction", ""))
+            # 使用description字段作为卷简介
+            self.volume_intro_edit.setPlainText(volume.get("description", ""))
 
             # 加载章节列表
             chapters = volume.get("chapters", [])
@@ -294,7 +295,7 @@ class ChapterOutlineTab(QWidget):
 
         new_volume = {
             "title": title,
-            "introduction": "",
+            "description": "",  # 卷简介
             "chapters": []
         }
 
@@ -530,7 +531,8 @@ class ChapterOutlineTab(QWidget):
             if self.current_volume_index < len(volumes):
                 volume = volumes[self.current_volume_index]
                 volume["title"] = self.volume_title_edit.text()
-                volume["introduction"] = self.volume_intro_edit.toPlainText()
+                # 更新description字段作为卷简介
+                volume["description"] = self.volume_intro_edit.toPlainText()
 
                 if self.current_chapter_index >= 0:
                     chapters = volume.get("chapters", [])
@@ -546,13 +548,48 @@ class ChapterOutlineTab(QWidget):
 
     def _generate_with_ai(self, field_name, current_text, set_func):
         """使用AI生成内容"""
+        # 获取总大纲信息
+        outline_info = {}
+        if self.outline:
+            outline_info = {
+                "title": self.outline.get("title", ""),
+                "theme": self.outline.get("theme", ""),
+                "synopsis": self.outline.get("synopsis", ""),
+                "worldbuilding": self.outline.get("worldbuilding", "")
+            }
+
+        # 根据不同的字段添加额外的上下文信息
+        context_info = {}
+
+        # 如果是卷简介，添加卷标题信息
+        if field_name == "卷简介" and self.current_volume_index >= 0:
+            volumes = self.outline.get("volumes", [])
+            if self.current_volume_index < len(volumes):
+                volume = volumes[self.current_volume_index]
+                context_info["volume_title"] = volume.get("title", "")
+
+        # 如果是章节摘要，添加卷标题、卷简介和章节标题信息
+        if field_name == "章节摘要" and self.current_volume_index >= 0 and self.current_chapter_index >= 0:
+            volumes = self.outline.get("volumes", [])
+            if self.current_volume_index < len(volumes):
+                volume = volumes[self.current_volume_index]
+                context_info["volume_title"] = volume.get("title", "")
+                context_info["volume_description"] = volume.get("description", "")
+
+                chapters = volume.get("chapters", [])
+                if self.current_chapter_index < len(chapters):
+                    chapter = chapters[self.current_chapter_index]
+                    context_info["chapter_title"] = chapter.get("title", "")
+
         dialog = AIGenerateDialog(
             self,
             f"AI生成{field_name}",
             field_name,
             current_text,
             models=["GPT", "Claude", "Gemini", "自定义OpenAI", "ModelScope"],
-            default_model="GPT"
+            default_model="GPT",
+            outline_info=outline_info,
+            context_info=context_info
         )
         if dialog.exec() == QDialog.DialogCode.Accepted:
             result = dialog.get_result()
