@@ -6,3 +6,5 @@ google-generativeai
 configparser
 requests
 tqdm
+qasync
+matplotlib

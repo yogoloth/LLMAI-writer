@@ -11,12 +11,14 @@ AI小说生成器
 import sys
 import os
 import argparse
+import asyncio
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtGui import QFont, QFontDatabase
+from qasync import QEventLoop, QApplication as QAsyncApplication
 from ui.main_window import MainWindow
 from ui.components import ThemeManager
 
-def main():
+async def main():
     """主函数"""
     # 解析命令行参数
     parser = argparse.ArgumentParser(description="AI小说生成器")
@@ -25,10 +27,14 @@ def main():
     args = parser.parse_args()
 
     # 创建应用程序
-    app = QApplication(sys.argv)
+    app = QAsyncApplication(sys.argv)
 
     # 设置应用程序样式
     app.setStyle("Fusion")
+
+    # 创建事件循环
+    loop = QEventLoop(app)
+    asyncio.set_event_loop(loop)
 
     # 创建主窗口
     window = MainWindow()
@@ -48,7 +54,8 @@ def main():
         QTimer.singleShot(500, lambda: window.load_file(args.file))
 
     # 运行应用程序
-    sys.exit(app.exec())
+    with loop:
+        return loop.run_forever()
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

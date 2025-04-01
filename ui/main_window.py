@@ -24,7 +24,9 @@ from ui.outline_edit_tab import OutlineEditTab
 from ui.chapter_outline_tab import ChapterOutlineTab
 from ui.chapter_tab import ChapterTab
 from ui.character_tab import CharacterTab
+from ui.chapter_analysis_tab import ChapterAnalysisTab
 from ui.settings_tab import SettingsTab
+from ui.statistics_dialog import StatisticsDialog
 
 class MainWindow(QMainWindow):
     """主窗口"""
@@ -111,6 +113,7 @@ class MainWindow(QMainWindow):
         self.chapter_outline_tab = ChapterOutlineTab(self)
         self.chapter_tab = ChapterTab(self)
         self.character_tab = CharacterTab(self)
+        self.chapter_analysis_tab = ChapterAnalysisTab(self)
         self.settings_tab = SettingsTab(self)
 
         # 添加标签页
@@ -119,6 +122,7 @@ class MainWindow(QMainWindow):
         self.tab_widget.addTab(self.chapter_outline_tab, "章节大纲编辑")
         self.tab_widget.addTab(self.chapter_tab, "章节生成")
         self.tab_widget.addTab(self.character_tab, "人物编辑")
+        self.tab_widget.addTab(self.chapter_analysis_tab, "章节分析")
         self.tab_widget.addTab(self.settings_tab, "设置")
 
     def _init_models(self):
@@ -222,6 +226,12 @@ class MainWindow(QMainWindow):
 
         toolbar.addSeparator()
 
+        # 统计
+        stats_action = QAction("统计信息", self)
+        stats_action.setShortcut(QKeySequence("Ctrl+I"))
+        stats_action.triggered.connect(self.show_statistics)
+        toolbar.addAction(stats_action)
+
         # 主题切换
         theme_action = QAction("切换主题", self)
         theme_action.setShortcut(QKeySequence("Ctrl+T"))
@@ -241,6 +251,17 @@ class MainWindow(QMainWindow):
         # 更新状态栏消息
         theme_name = "深色" if self.theme_manager.current_theme == ThemeManager.DARK_THEME else "明亮"
         self.status_bar_manager.show_message(f"已切换到{theme_name}主题")
+
+    def show_statistics(self):
+        """显示统计信息"""
+        # 检查是否有大纲
+        if not self.data_manager.get_outline():
+            QMessageBox.warning(self, "统计失败", "没有可统计的内容")
+            return
+
+        # 创建统计对话框
+        dialog = StatisticsDialog(self, self.data_manager)
+        dialog.exec()
 
     def show_help(self):
         """显示帮助"""
@@ -287,6 +308,8 @@ class MainWindow(QMainWindow):
         self.chapter_tab.update_outline(outline)
         # 更新人物编辑标签页
         self.character_tab.update_characters()
+        # 更新章节分析标签页
+        self.chapter_analysis_tab.set_outline(outline)
 
     def get_outline(self):
         """获取小说大纲"""
