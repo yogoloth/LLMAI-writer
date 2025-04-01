@@ -25,8 +25,8 @@ from ui.chapter_outline_tab import ChapterOutlineTab
 from ui.chapter_tab import ChapterTab
 from ui.character_tab import CharacterTab
 from ui.chapter_analysis_tab import ChapterAnalysisTab
+from ui.statistics_tab import StatisticsTab
 from ui.settings_tab import SettingsTab
-from ui.statistics_dialog import StatisticsDialog
 
 class MainWindow(QMainWindow):
     """主窗口"""
@@ -114,6 +114,7 @@ class MainWindow(QMainWindow):
         self.chapter_tab = ChapterTab(self)
         self.character_tab = CharacterTab(self)
         self.chapter_analysis_tab = ChapterAnalysisTab(self)
+        self.statistics_tab = StatisticsTab(self)
         self.settings_tab = SettingsTab(self)
 
         # 添加标签页
@@ -123,6 +124,7 @@ class MainWindow(QMainWindow):
         self.tab_widget.addTab(self.chapter_tab, "章节生成")
         self.tab_widget.addTab(self.character_tab, "人物编辑")
         self.tab_widget.addTab(self.chapter_analysis_tab, "章节分析")
+        self.tab_widget.addTab(self.statistics_tab, "统计信息")
         self.tab_widget.addTab(self.settings_tab, "设置")
 
     def _init_models(self):
@@ -259,9 +261,11 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "统计失败", "没有可统计的内容")
             return
 
-        # 创建统计对话框
-        dialog = StatisticsDialog(self, self.data_manager)
-        dialog.exec()
+        # 切换到统计标签页
+        self.tab_widget.setCurrentWidget(self.statistics_tab)
+
+        # 更新统计信息
+        self.statistics_tab.update_statistics()
 
     def show_help(self):
         """显示帮助"""
@@ -310,6 +314,8 @@ class MainWindow(QMainWindow):
         self.character_tab.update_characters()
         # 更新章节分析标签页
         self.chapter_analysis_tab.set_outline(outline)
+        # 更新统计标签页
+        self.statistics_tab.update_statistics()
 
     def get_outline(self):
         """获取小说大纲"""
