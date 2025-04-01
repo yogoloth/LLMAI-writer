@@ -51,11 +51,27 @@ class ModelScopeModel(AIModel):
                 stream=False
             )
 
-            # 获取回答内容
+            # 获取思考过程和最终答案
+            result = ""
+
+            # 先检查是否有思考过程
+            if hasattr(response.choices[0], 'message') and hasattr(response.choices[0].message, 'reasoning_content'):
+                reasoning = response.choices[0].message.reasoning_content
+                if reasoning:
+                    result += reasoning
+                    result += "\n\n === 最终答案 ===\n\n"
+
+            # 再获取最终答案
             if hasattr(response.choices[0], 'message') and hasattr(response.choices[0].message, 'content'):
-                return response.choices[0].message.content
-            else:
+                content = response.choices[0].message.content
+                if content:
+                    result += content
+
+            # 如果没有内容，返回原始响应
+            if not result:
                 return str(response)
+
+            return result
 
         except Exception as e:
             raise Exception(f"生成文本时出错: {str(e)}")
@@ -81,13 +97,34 @@ class ModelScopeModel(AIModel):
             )
 
             # 处理流式响应
+            done_reasoning = False
             for chunk in response:
-                # 获取内容
+                # 获取思考过程和最终答案
+                reasoning_content = ""
                 content = ""
+
+                if hasattr(chunk.choices[0].delta, 'reasoning_content'):
+                    reasoning_content = chunk.choices[0].delta.reasoning_content or ""
+
                 if hasattr(chunk.choices[0].delta, 'content'):
                     content = chunk.choices[0].delta.content or ""
 
-                if content:
+                # 先输出思考过程
+                if reasoning_content:
+                    if callback:
+                        callback(reasoning_content)
+                    yield reasoning_content
+
+                # 再输出最终答案
+                elif content:
+                    # 如果是第一次输出最终答案，添加分隔符
+                    if not done_reasoning:
+                        separator = "\n\n === 最终答案 ===\n\n"
+                        if callback:
+                            callback(separator)
+                        yield separator
+                        done_reasoning = True
+
                     if callback:
                         callback(content)
                     yield content
