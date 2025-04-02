@@ -30,8 +30,10 @@ LLMAI-writer 是一个功能强大的 AI 辅助小说创作工具，利用最先
 
 ## 📋 系统要求
 
+> **必读提示：** 本项目必须使用 **Python 3.9 或更高版本**！Gemini 功能依赖的 google-genai 库仅支持 Python 3.9+，这是 Google 官方的要求。如果您使用较旧版本的 Python，请参考常见问题部分的解决方案。
+
 - **操作系统**：Windows 10/11、macOS 10.14+、Linux
-- **Python**：3.8 或更高版本
+- **Python**：3.9 或更高版本
 - **网络连接**：用于访问 AI API 服务
 - **硬盘空间**：约 100MB（不包括生成的小说文件）
 
@@ -132,8 +134,16 @@ model_name = your_model_name
 ### 安装依赖失败
 如果安装依赖时遇到问题，可以尝试手动安装主要依赖：
 ```bash
-pip install PyQt6 openai anthropic google-generativeai
+pip install PyQt6 openai anthropic google-genai
 ```
+
+注意：如果安装 google-genai 失败，请确保您使用的是 Python 3.9 或更高版本。
+
+如果您的 Python 版本低于 3.9，您有以下选择：
+1. **升级 Python**：强烈推荐升级到 Python 3.9 或更高版本以获得完整功能
+2. **移除 Gemini 相关代码**：如果无法升级 Python，您可以从项目中删除与 Gemini 相关的代码（主要在 `models/gemini_model.py` 和 UI 中的相关选项）
+
+注意：根据 Google 官方文档，Gemini API 的 Python SDK 仅支持 Python 3.9 及更高版本，不存在兼容旧版本 Python 的方法。
 
 ### API 连接问题
 - 确保您的 API 密钥正确
