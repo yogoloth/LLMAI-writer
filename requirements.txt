@@ -2,7 +2,7 @@ PyQt6
 aiohttp
 openai
 anthropic
-google-generativeai
+google-genai
 configparser
 requests
 tqdm
