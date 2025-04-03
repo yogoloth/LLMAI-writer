@@ -160,6 +160,20 @@ class MainWindow(QMainWindow):
             except Exception as e:
                 print(f"自定义OpenAI模型初始化失败: {e}")
 
+        # 初始化多个自定义OpenAI模型
+        self.custom_openai_models = {}
+        if self.config_manager.is_custom_openai_models_enabled():
+            models = self.config_manager.get_custom_openai_models()
+            for model_config in models:
+                try:
+                    model_name = model_config.get('name')
+                    if model_name:
+                        model = CustomOpenAIModel(self.config_manager, model_config)
+                        self.custom_openai_models[model_name] = model
+                        print(f"初始化自定义模型: {model_name}")
+                except Exception as e:
+                    print(f"自定义模型 '{model_config.get('name', '未命名')}' 初始化失败: {e}")
+
         # 初始化ModelScope API
         self.has_modelscope = False
         if self.config_manager.is_modelscope_enabled():
@@ -170,7 +184,7 @@ class MainWindow(QMainWindow):
                 print(f"ModelScope模型初始化失败: {e}")
 
         # 检查是否至少有一个模型可用
-        if not any([self.has_gpt, self.has_claude, self.has_gemini, self.has_custom_openai, self.has_modelscope]):
+        if not any([self.has_gpt, self.has_claude, self.has_gemini, self.has_custom_openai, self.has_modelscope, bool(self.custom_openai_models)]):
             QMessageBox.warning(
                 self,
                 "模型初始化失败",
@@ -179,6 +193,11 @@ class MainWindow(QMainWindow):
 
     def get_model(self, model_type):
         """获取指定类型的模型"""
+        # 检查是否是自定义模型
+        if model_type in self.custom_openai_models:
+            return self.custom_openai_models[model_type]
+
+        # 检查标准模型
         if model_type == "gpt" and self.has_gpt:
             return self.gpt_model
         elif model_type == "claude" and self.has_claude:
@@ -201,6 +220,9 @@ class MainWindow(QMainWindow):
                 return self.custom_openai_model
             elif self.has_modelscope:
                 return self.modelscope_model
+            elif self.custom_openai_models:
+                # 返回第一个自定义模型
+                return list(self.custom_openai_models.values())[0]
             else:
                 raise ValueError("没有可用的AI模型")
 

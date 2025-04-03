@@ -51,7 +51,14 @@ class OutlineTab(QWidget):
         model_layout = QFormLayout()
 
         self.model_combo = QComboBox()
+        # 添加标准模型
         self.model_combo.addItems(["GPT", "Claude", "Gemini", "自定义OpenAI", "ModelScope"])
+
+        # 添加自定义模型
+        if hasattr(self.main_window, 'custom_openai_models') and self.main_window.custom_openai_models:
+            for model_name in self.main_window.custom_openai_models.keys():
+                self.model_combo.addItem(model_name)
+
         model_layout.addRow("AI模型:", self.model_combo)
 
         # 温度设置已移除

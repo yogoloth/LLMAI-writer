@@ -42,6 +42,12 @@ class ConfigManager:
             'api_url': 'https://your-custom-api-endpoint.com/v1/chat/completions'
         }
 
+        # 添加自定义OpenAI模型配置部分
+        self.config['CUSTOM_OPENAI_MODELS'] = {
+            'enabled': 'false',
+            'models': '[]'  # 使用JSON字符串存储模型列表
+        }
+
         self.config['MODELSCOPE'] = {
             'enabled': 'false',
             'base_url': 'https://api-inference.modelscope.cn/v1/'
@@ -112,6 +118,141 @@ class ConfigManager:
             return False
 
         return self.config['MODELSCOPE'].getboolean('enabled', fallback=False)
+
+    def is_custom_openai_models_enabled(self):
+        """检查多个自定义OpenAI模型是否启用"""
+        if 'CUSTOM_OPENAI_MODELS' not in self.config:
+            return False
+
+        return self.config['CUSTOM_OPENAI_MODELS'].getboolean('enabled', fallback=False)
+
+    def get_custom_openai_models(self):
+        """获取所有自定义OpenAI模型配置"""
+        if 'CUSTOM_OPENAI_MODELS' not in self.config:
+            return []
+
+        import json
+        try:
+            models_json = self.config['CUSTOM_OPENAI_MODELS'].get('models', '[]')
+            return json.loads(models_json)
+        except json.JSONDecodeError:
+            return []
+
+    def add_custom_openai_model(self, model_config):
+        """添加一个自定义OpenAI模型配置
+
+        Args:
+            model_config: 模型配置字典，包含 name, api_key, model_name, api_url 等字段
+
+        Returns:
+            成功返回 True，失败返回 False
+        """
+        if 'CUSTOM_OPENAI_MODELS' not in self.config:
+            self.config['CUSTOM_OPENAI_MODELS'] = {}
+            self.config['CUSTOM_OPENAI_MODELS']['enabled'] = 'true'
+            self.config['CUSTOM_OPENAI_MODELS']['models'] = '[]'
+
+        # 获取当前模型列表
+        models = self.get_custom_openai_models()
+
+        # 检查是否已存在同名模型
+        for model in models:
+            if model.get('name') == model_config.get('name'):
+                return False
+
+        # 添加新模型
+        models.append(model_config)
+
+        # 保存模型列表
+        import json
+        self.config['CUSTOM_OPENAI_MODELS']['models'] = json.dumps(models, ensure_ascii=False)
+        self.config['CUSTOM_OPENAI_MODELS']['enabled'] = 'true'
+
+        # 保存配置
+        self.save_config()
+        return True
+
+    def update_custom_openai_model(self, model_name, model_config):
+        """更新一个自定义OpenAI模型配置
+
+        Args:
+            model_name: 要更新的模型名称
+            model_config: 新的模型配置
+
+        Returns:
+            成功返回 True，失败返回 False
+        """
+        if 'CUSTOM_OPENAI_MODELS' not in self.config:
+            return False
+
+        # 获取当前模型列表
+        models = self.get_custom_openai_models()
+
+        # 查找并更新模型
+        for i, model in enumerate(models):
+            if model.get('name') == model_name:
+                models[i] = model_config
+
+                # 保存模型列表
+                import json
+                self.config['CUSTOM_OPENAI_MODELS']['models'] = json.dumps(models, ensure_ascii=False)
+
+                # 保存配置
+                self.save_config()
+                return True
+
+        return False
+
+    def delete_custom_openai_model(self, model_name):
+        """删除一个自定义OpenAI模型配置
+
+        Args:
+            model_name: 要删除的模型名称
+
+        Returns:
+            成功返回 True，失败返回 False
+        """
+        if 'CUSTOM_OPENAI_MODELS' not in self.config:
+            return False
+
+        # 获取当前模型列表
+        models = self.get_custom_openai_models()
+
+        # 查找并删除模型
+        for i, model in enumerate(models):
+            if model.get('name') == model_name:
+                del models[i]
+
+                # 保存模型列表
+                import json
+                self.config['CUSTOM_OPENAI_MODELS']['models'] = json.dumps(models, ensure_ascii=False)
+
+                # 如果没有模型了，禁用自定义模型功能
+                if not models:
+                    self.config['CUSTOM_OPENAI_MODELS']['enabled'] = 'false'
+
+                # 保存配置
+                self.save_config()
+                return True
+
+        return False
+
+    def get_custom_openai_model(self, model_name):
+        """获取指定名称的自定义OpenAI模型配置
+
+        Args:
+            model_name: 模型名称
+
+        Returns:
+            模型配置字典，如果不存在返回 None
+        """
+        models = self.get_custom_openai_models()
+
+        for model in models:
+            if model.get('name') == model_name:
+                return model
+
+        return None
 
     def save_config(self):
         """保存配置到文件"""

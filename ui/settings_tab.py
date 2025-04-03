@@ -6,6 +6,7 @@ from PyQt6.QtWidgets import (
     QMessageBox, QSpinBox, QComboBox, QDoubleSpinBox
 )
 from PyQt6.QtCore import Qt
+from ui.custom_model_dialog import CustomModelDialog
 
 class SettingsTab(QWidget):
     """设置标签页"""
@@ -108,6 +109,11 @@ class SettingsTab(QWidget):
         self.custom_openai_url = QLineEdit()
         self.custom_openai_url.setPlaceholderText("https://your-custom-api-endpoint.com/v1/chat/completions")
         custom_openai_layout.addRow("API地址:", self.custom_openai_url)
+
+        # 添加多模型管理按钮
+        self.manage_models_button = QPushButton("管理自定义模型")
+        self.manage_models_button.clicked.connect(self._manage_custom_models)
+        custom_openai_layout.addRow("", self.manage_models_button)
 
         custom_openai_group.setLayout(custom_openai_layout)
         main_layout.addWidget(custom_openai_group)
@@ -241,3 +247,8 @@ class SettingsTab(QWidget):
             "需要重启",
             "某些设置更改需要重启应用才能生效。"
         )
+
+    def _manage_custom_models(self):
+        """管理自定义模型"""
+        dialog = CustomModelDialog(self, self.config_manager)
+        dialog.exec()
