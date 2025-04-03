@@ -241,9 +241,10 @@ class AIGenerateDialog(QDialog):
         self.new_template_button.clicked.connect(self._create_new_template)
         template_layout.addWidget(self.new_template_button)
 
-        self.save_template_button = QPushButton("保存为模板")
-        self.save_template_button.clicked.connect(self._save_as_template)
-        template_layout.addWidget(self.save_template_button)
+        self.edit_template_button = QPushButton("编辑模板")
+        self.edit_template_button.clicked.connect(self._edit_template)
+        self.edit_template_button.setEnabled(False)  # 初始禁用
+        template_layout.addWidget(self.edit_template_button)
 
         self.delete_template_button = QPushButton("删除模板")
         self.delete_template_button.clicked.connect(self._delete_template)
@@ -331,11 +332,13 @@ class AIGenerateDialog(QDialog):
 
     def _on_template_changed(self, index):
         """模板选择变更事件"""
-        # 启用/禁用删除模板按钮
+        # 启用/禁用删除模板按钮和编辑模板按钮
         if index <= 0 or not self.prompt_manager:  # 第一项是提示文本或没有提示词管理器
             self.delete_template_button.setEnabled(False)
+            self.edit_template_button.setEnabled(False)
         else:
             self.delete_template_button.setEnabled(True)
+            self.edit_template_button.setEnabled(True)
 
         # 如果有提示词管理器且选择了有效模板
         if self.prompt_manager and index > 0:
@@ -526,6 +529,41 @@ class AIGenerateDialog(QDialog):
                     QMessageBox.information(self, "保存成功", f"模板 '{template_name}' 已保存")
                 else:
                     QMessageBox.warning(self, "保存失败", f"模板 '{template_name}' 已存在或保存失败")
+
+    def _edit_template(self):
+        """编辑当前选中的模板"""
+        if not self.prompt_manager:
+            QMessageBox.warning(self, "错误", "无法获取提示词管理器")
+            return
+
+        if self.template_combo.currentIndex() <= 0:
+            return
+
+        template_name = self.template_combo.currentText()
+        template = self.prompt_manager.get_template(template_name)
+
+        if not template:
+            QMessageBox.warning(self, "错误", f"无法获取模板 '{template_name}'")
+            return
+
+        # 确定模板分类
+        category = template.category
+
+        # 获取当前编辑器中的内容
+        current_content = self.prompt_edit.toPlainText()
+
+        # 更新模板
+        success = self.prompt_manager.update_template(
+            template_name,
+            current_content,
+            category,
+            template.description
+        )
+
+        if success:
+            QMessageBox.information(self, "保存成功", f"模板 '{template_name}' 已更新")
+        else:
+            QMessageBox.warning(self, "保存失败", f"无法更新模板 '{template_name}'")
 
     def _delete_template(self):
         """删除当前选中的模板"""
