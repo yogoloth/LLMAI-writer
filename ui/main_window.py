@@ -105,6 +105,7 @@ class MainWindow(QMainWindow):
 
         # 创建标签页
         self.tab_widget = QTabWidget()
+        self.tab_widget.currentChanged.connect(self._on_tab_changed)  # 连接标签页切换事件
         main_layout.addWidget(self.tab_widget)
 
         # 创建各个标签页
@@ -328,6 +329,84 @@ class MainWindow(QMainWindow):
     def get_chapter(self, volume_index, chapter_index):
         """获取章节内容"""
         return self.data_manager.get_chapter(volume_index, chapter_index)
+
+    def _on_tab_changed(self, index):
+        """处理标签页切换事件
+
+        在切换标签页时自动保存当前标签页的内容
+
+        Args:
+            index: 新标签页的索引
+        """
+        # 获取当前标签页
+        current_tab = self.tab_widget.currentWidget()
+
+        # 根据标签页类型执行不同的保存操作
+        if current_tab == self.outline_edit_tab:
+            # 自动保存总大纲编辑页面的内容
+            try:
+                # 调用保存方法，但不显示消息框
+                if hasattr(self.outline_edit_tab, 'outline') and self.outline_edit_tab.outline:
+                    # 更新大纲数据
+                    self.outline_edit_tab.outline["title"] = self.outline_edit_tab.title_edit.text()
+                    self.outline_edit_tab.outline["theme"] = self.outline_edit_tab.theme_edit.toPlainText()
+                    self.outline_edit_tab.outline["synopsis"] = self.outline_edit_tab.synopsis_edit.toPlainText()
+                    self.outline_edit_tab.outline["worldbuilding"] = self.outline_edit_tab.world_edit.toPlainText()
+
+                    # 保存大纲
+                    self.set_outline(self.outline_edit_tab.outline)
+                    self.status_bar_manager.show_message("总大纲已自动保存")
+            except Exception as e:
+                print(f"自动保存总大纲时出错: {e}")
+
+        elif current_tab == self.chapter_outline_tab:
+            # 自动保存章节大纲编辑页面的内容
+            try:
+                # 调用保存方法，但不显示消息框
+                if hasattr(self.chapter_outline_tab, 'outline') and self.chapter_outline_tab.outline:
+                    # 保存当前编辑的卷和章节
+                    if self.chapter_outline_tab.current_volume_index >= 0:
+                        volumes = self.chapter_outline_tab.outline.get("volumes", [])
+                        if self.chapter_outline_tab.current_volume_index < len(volumes):
+                            volume = volumes[self.chapter_outline_tab.current_volume_index]
+                            volume["title"] = self.chapter_outline_tab.volume_title_edit.text()
+                            # 更新description字段作为卷简介
+                            volume["description"] = self.chapter_outline_tab.volume_intro_edit.toPlainText()
+
+                            if self.chapter_outline_tab.current_chapter_index >= 0:
+                                chapters = volume.get("chapters", [])
+                                if self.chapter_outline_tab.current_chapter_index < len(chapters):
+                                    chapter = chapters[self.chapter_outline_tab.current_chapter_index]
+                                    chapter["title"] = self.chapter_outline_tab.chapter_title_edit.text()
+                                    chapter["summary"] = self.chapter_outline_tab.chapter_summary_edit.toPlainText()
+
+                    # 保存大纲
+                    self.set_outline(self.chapter_outline_tab.outline)
+                    self.status_bar_manager.show_message("章节大纲已自动保存")
+            except Exception as e:
+                print(f"自动保存章节大纲时出错: {e}")
+
+        elif current_tab == self.chapter_tab:
+            # 自动保存章节内容
+            try:
+                if self.chapter_tab.current_volume_index >= 0 and self.chapter_tab.current_chapter_index >= 0:
+                    # 获取章节内容
+                    content = self.chapter_tab.output_edit.toPlainText()
+                    if content:
+                        # 保存章节内容
+                        self.set_chapter(self.chapter_tab.current_volume_index, self.chapter_tab.current_chapter_index, content)
+                        self.status_bar_manager.show_message("章节内容已自动保存")
+            except Exception as e:
+                print(f"自动保存章节内容时出错: {e}")
+
+        elif current_tab == self.character_tab:
+            # 自动保存人物数据
+            try:
+                if hasattr(self.character_tab, '_save_characters'):
+                    self.character_tab._save_characters()
+                    self.status_bar_manager.show_message("人物数据已自动保存")
+            except Exception as e:
+                print(f"自动保存人物数据时出错: {e}")
 
     def save_novel(self):
         """保存小说"""
