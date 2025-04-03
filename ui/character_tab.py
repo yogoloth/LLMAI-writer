@@ -35,7 +35,11 @@ class CharacterDetailDialog(QDialog):
         self.identity_edit = QLineEdit(self.character.get("identity", ""))
         basic_layout.addRow("身份:", self.identity_edit)
 
-        self.age_edit = QLineEdit(self.character.get("age", ""))
+        # 确保年龄是字符串类型
+        age_value = self.character.get("age", "")
+        if isinstance(age_value, int):
+            age_value = str(age_value)
+        self.age_edit = QLineEdit(age_value)
         basic_layout.addRow("年龄:", self.age_edit)
 
         self.gender_combo = QComboBox()
