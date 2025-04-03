@@ -159,7 +159,8 @@ class OutlineEditTab(QWidget):
             current_text,
             models=["GPT", "Claude", "Gemini", "自定义OpenAI", "ModelScope"],
             default_model="GPT",
-            outline_info=outline_info
+            outline_info=outline_info,
+            prompt_manager=self.main_window.prompt_manager
         )
         if dialog.exec() == QDialog.DialogCode.Accepted:
             result = dialog.get_result()

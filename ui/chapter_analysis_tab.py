@@ -144,7 +144,7 @@ class ChapterAnalysisTab(QWidget):
 
         # 创建分析结果标签页
         self.result_tabs = QTabWidget()
-        
+
         # 创建各个分析结果标签页
         self.plot_tab = QWidget()
         plot_layout = QVBoxLayout(self.plot_tab)
@@ -285,7 +285,7 @@ class ChapterAnalysisTab(QWidget):
         for i in range(analysis_range):
             if i >= len(self.selected_chapters):
                 break
-                
+
             chapter_index = self.selected_chapters[i]
             if chapter_index < 0 or chapter_index >= len(chapters):
                 continue
@@ -342,7 +342,8 @@ class ChapterAnalysisTab(QWidget):
             prompt,
             models=[model_type],
             default_model=model_type,
-            outline_info=outline_info
+            outline_info=outline_info,
+            prompt_manager=self.main_window.prompt_manager
         )
 
         # 显示对话框
@@ -463,24 +464,24 @@ class ChapterAnalysisTab(QWidget):
         # 尝试查找二级标题
         section_pattern = f"## {section_title}"
         section_start = text.find(section_pattern)
-        
+
         # 如果没找到，尝试查找一级标题
         if section_start == -1:
             section_pattern = f"# {section_title}"
             section_start = text.find(section_pattern)
-        
+
         # 如果没找到，尝试查找无标记的标题
         if section_start == -1:
             section_pattern = f"{section_title}"
             section_start = text.find(section_pattern)
-        
+
         # 如果仍然没找到，返回空字符串
         if section_start == -1:
             return ""
-        
+
         # 找到了部分的开始，现在查找结束位置
         section_end = len(text)
-        
+
         # 查找下一个部分的开始位置
         for title in other_titles:
             # 尝试查找二级标题
@@ -488,19 +489,19 @@ class ChapterAnalysisTab(QWidget):
             if next_section != -1 and next_section < section_end:
                 section_end = next_section
                 continue
-                
+
             # 尝试查找一级标题
             next_section = text.find(f"# {title}", section_start + 1)
             if next_section != -1 and next_section < section_end:
                 section_end = next_section
                 continue
-                
+
             # 尝试查找无标记的标题
             next_section = text.find(f"{title}", section_start + 1)
             if next_section != -1 and next_section < section_end:
                 section_end = next_section
-        
+
         # 提取部分内容
         section_content = text[section_start:section_end].strip()
-        
+
         return section_content

@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 import json
 import asyncio
 from PyQt6.QtWidgets import (
@@ -67,15 +70,20 @@ class OutlineTab(QWidget):
         self.template_combo.currentIndexChanged.connect(self._on_template_selected)
         template_layout.addWidget(self.template_combo)
 
-        # 添加编辑和保存模板按钮
+        # 添加新建、编辑和保存模板按钮
+        self.new_template_button = QPushButton("新建")
+        self.new_template_button.clicked.connect(self._create_new_template)
+        template_layout.addWidget(self.new_template_button)
+
         self.edit_template_button = QPushButton("编辑")
         self.edit_template_button.setEnabled(False)
         self.edit_template_button.clicked.connect(self._edit_template)
         template_layout.addWidget(self.edit_template_button)
 
-        self.save_template_button = QPushButton("保存")
-        self.save_template_button.clicked.connect(self._save_as_template)
-        template_layout.addWidget(self.save_template_button)
+        self.delete_template_button = QPushButton("删除")
+        self.delete_template_button.clicked.connect(self._delete_template)
+        self.delete_template_button.setEnabled(False)  # 初始禁用
+        template_layout.addWidget(self.delete_template_button)
 
         model_layout.addRow("提示词模板:", template_layout)
 
@@ -224,14 +232,16 @@ class OutlineTab(QWidget):
         """模板选择事件处理"""
         if index <= 0:  # 第一项是提示文本
             self.edit_template_button.setEnabled(False)
+            self.delete_template_button.setEnabled(False)
             return
 
         template_name = self.template_combo.currentText()
         template = self.prompt_manager.get_template(template_name)
 
         if template:
-            # 启用编辑按钮
+            # 启用编辑和删除按钮
             self.edit_template_button.setEnabled(True)
+            self.delete_template_button.setEnabled(True)
 
             # 显示模板信息
             QMessageBox.information(
@@ -412,6 +422,112 @@ class OutlineTab(QWidget):
     # 已移除load_outline方法
     # 这个功能现在由主窗口的工具栏按钮提供
 
+    def _create_new_template(self):
+        """创建新模板"""
+        # 创建编辑对话框
+        dialog = QDialog(self)
+        dialog.setWindowTitle("创建新模板")
+        dialog.resize(600, 500)
+
+        layout = QVBoxLayout(dialog)
+
+        # 模板名称
+        name_layout = QHBoxLayout()
+        name_layout.addWidget(QLabel("模板名称:"))
+        name_edit = QLineEdit(f"自定义大纲模板_{len(self.prompt_manager.get_templates_by_category('outline')) + 1}")
+        name_layout.addWidget(name_edit)
+        layout.addLayout(name_layout)
+
+        # 模板描述
+        desc_layout = QHBoxLayout()
+        desc_layout.addWidget(QLabel("模板描述:"))
+        desc_edit = QLineEdit("自定义大纲生成模板")
+        desc_layout.addWidget(desc_edit)
+        layout.addLayout(desc_layout)
+
+        # 模板分类
+        category_layout = QHBoxLayout()
+        category_layout.addWidget(QLabel("模板分类:"))
+        category_edit = QLineEdit("outline")
+        category_edit.setEnabled(False)  # 固定为outline分类
+        category_layout.addWidget(category_edit)
+        layout.addLayout(category_layout)
+
+        # 模板内容
+        content_label = QLabel("模板内容:")
+        layout.addWidget(content_label)
+
+        content_edit = QTextEdit()
+        default_content = """请为我创建一部小说的详细大纲，具体要求如下：
+
+小说标题：[用户输入的标题]
+小说类型：[用户输入的类型]
+主题：[用户输入的主题]
+风格：[用户输入的风格]
+简介：[用户输入的简介]
+
+卷数：[用户设置的卷数] 卷
+每卷章节数：[用户设置的章节数] 章
+每章字数：[用户设置的字数] 字
+
+人物设置：
+主角数量：[用户设置的主角数量] 个
+重要角色数量：[用户设置的重要角色数量] 个
+配角数量：[用户设置的配角数量] 个
+龙套数量：[用户设置的龙套数量] 个
+
+请生成以下内容：
+1. 小说标题
+2. 核心主题
+3. 主要人物（包括姓名、身份、性格特点和背景故事）
+4. 故事梗概
+5. 分卷结构（每卷包含标题、简介和具体章节）
+6. 世界观设定
+
+特别要求：
+1. 卷标题必须包含卷号，如"第一卷：卷标题"
+2. 章节标题必须包含章节号，如"第一章：章节标题"
+
+请确保大纲结构完整、逻辑合理，并以JSON格式返回。"""
+        content_edit.setPlainText(default_content)
+        layout.addWidget(content_edit)
+
+        # 按钮
+        button_layout = QHBoxLayout()
+
+        save_button = QPushButton("保存")
+        save_button.clicked.connect(dialog.accept)
+        button_layout.addWidget(save_button)
+
+        cancel_button = QPushButton("取消")
+        cancel_button.clicked.connect(dialog.reject)
+        button_layout.addWidget(cancel_button)
+
+        layout.addLayout(button_layout)
+
+        # 显示对话框
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            template_name = name_edit.text()
+            template_content = content_edit.toPlainText()
+            template_desc = desc_edit.text()
+
+            # 添加模板
+            success = self.prompt_manager.add_template(
+                template_name,
+                template_content,
+                "outline",
+                template_desc
+            )
+
+            if success:
+                # 添加到下拉框
+                self.template_combo.addItem(template_name)
+                self.template_combo.setCurrentText(template_name)
+
+                QMessageBox.information(self, "保存成功", f"模板 '{template_name}' 已创建")
+            else:
+                QMessageBox.warning(self, "保存失败", f"模板 '{template_name}' 已存在或保存失败")
+
     def _edit_template(self):
         """编辑选中的模板"""
         if self.template_combo.currentIndex() <= 0:
@@ -474,22 +590,43 @@ class OutlineTab(QWidget):
 
         # 显示对话框
         if dialog.exec() == QDialog.DialogCode.Accepted:
-            # 更新模板
-            updated_template = self.prompt_manager.update_template(
-                template.name,
-                name_edit.text(),
+            # 检查名称是否变更
+            new_name = name_edit.text()
+            old_name = template.name
+
+            # 更新模板内容
+            success = self.prompt_manager.update_template(
+                old_name,
                 content_edit.toPlainText(),
-                desc_edit.text(),
-                category_edit.text()
+                category_edit.text(),
+                desc_edit.text()
             )
 
-            if updated_template:
-                # 如果名称变化，需要更新下拉框
-                if updated_template.name != template.name:
-                    current_index = self.template_combo.currentIndex()
-                    self.template_combo.setItemText(current_index, updated_template.name)
+            # 如果名称变更，需要删除旧模板并创建新模板
+            if success and new_name != old_name:
+                # 保存模板内容
+                content = content_edit.toPlainText()
+                category = category_edit.text()
+                description = desc_edit.text()
 
-                QMessageBox.information(self, "保存成功", f"模板 '{updated_template.name}' 已更新")
+                # 删除旧模板
+                self.prompt_manager.delete_template(old_name)
+
+                # 创建新模板
+                self.prompt_manager.add_template(
+                    new_name,
+                    content,
+                    category,
+                    description
+                )
+
+                # 更新下拉框
+                current_index = self.template_combo.currentIndex()
+                self.template_combo.setItemText(current_index, new_name)
+
+                QMessageBox.information(self, "保存成功", f"模板 '{new_name}' 已更新")
+            elif success:
+                QMessageBox.information(self, "保存成功", f"模板 '{old_name}' 已更新")
 
     def _save_as_template(self):
         """保存当前设置为新模板"""
@@ -537,8 +674,8 @@ class OutlineTab(QWidget):
 6. 世界观设定
 
 特别要求：
-1. 卷标题必须包含卷号，如“第一卷：卷标题”
-2. 章节标题必须包含章节号，如“第一章：章节标题”
+1. 卷标题必须包含卷号，如"第一卷：卷标题"
+2. 章节标题必须包含章节号，如"第一章：章节标题"
 
 请确保大纲结构完整、逻辑合理，并以JSON格式返回。"""
 
@@ -557,16 +694,51 @@ class OutlineTab(QWidget):
 
             if ok:
                 # 添加模板
-                new_template = self.prompt_manager.add_template(
+                success = self.prompt_manager.add_template(
                     template_name,
                     template_content,
-                    template_desc,
-                    "outline"
+                    "outline",
+                    template_desc
                 )
 
-                if new_template:
+                if success:
                     # 添加到下拉框
-                    self.template_combo.addItem(new_template.name)
-                    self.template_combo.setCurrentText(new_template.name)
+                    self.template_combo.addItem(template_name)
+                    self.template_combo.setCurrentText(template_name)
 
-                    QMessageBox.information(self, "保存成功", f"模板 '{new_template.name}' 已保存")
+                    QMessageBox.information(self, "保存成功", f"模板 '{template_name}' 已保存")
+                else:
+                    QMessageBox.warning(self, "保存失败", f"模板 '{template_name}' 已存在或保存失败")
+
+    def _delete_template(self):
+        """删除当前选中的模板"""
+        if self.template_combo.currentIndex() <= 0:
+            return
+
+        template_name = self.template_combo.currentText()
+
+        # 确认删除
+        reply = QMessageBox.question(
+            self,
+            "确认删除",
+            f"确定要删除模板 '{template_name}' 吗？此操作不可撤销。",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+
+        if reply == QMessageBox.StandardButton.Yes:
+            # 删除模板
+            success = self.prompt_manager.delete_template(template_name)
+
+            if success:
+                # 从下拉框中移除
+                current_index = self.template_combo.currentIndex()
+                self.template_combo.removeItem(current_index)
+
+                # 禁用编辑和删除按钮
+                self.edit_template_button.setEnabled(False)
+                self.delete_template_button.setEnabled(False)
+
+                QMessageBox.information(self, "删除成功", f"模板 '{template_name}' 已删除")
+            else:
+                QMessageBox.warning(self, "删除失败", f"模板 '{template_name}' 删除失败")

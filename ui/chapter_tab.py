@@ -322,7 +322,8 @@ class ChapterTab(QWidget):
             models=["GPT", "Claude", "Gemini", "自定义OpenAI", "ModelScope"],
             default_model="GPT",
             outline_info=outline_info,
-            context_info=context_info
+            context_info=context_info,
+            prompt_manager=self.main_window.prompt_manager
         )
 
         if dialog.exec() == QDialog.DialogCode.Accepted:

@@ -31,7 +31,7 @@ class AIGenerateDialog(QDialog):
     """
 
     def __init__(self, parent=None, title="AI生成", field_name="内容", current_text="",
-                 models=None, default_model="GPT", outline_info=None, context_info=None):
+                 models=None, default_model="GPT", outline_info=None, context_info=None, prompt_manager=None):
         """
         初始化AI生成对话框
 
@@ -44,6 +44,7 @@ class AIGenerateDialog(QDialog):
             default_model: 默认选择的模型
             outline_info: 总大纲信息，包含标题、中心思想、故事梦概和世界观设定
             context_info: 上下文信息，如卷标题、卷简介、章节标题等
+            prompt_manager: 提示词管理器实例
         """
         super().__init__(parent)
         self.setWindowTitle(title)
@@ -56,6 +57,21 @@ class AIGenerateDialog(QDialog):
         self.default_model = default_model if default_model in self.models else self.models[0]
         self.outline_info = outline_info or {}
         self.context_info = context_info or {}
+
+        # 获取提示词管理器
+        if prompt_manager:
+            self.prompt_manager = prompt_manager
+        else:
+            # 尝试从父窗口获取
+            try:
+                if hasattr(parent, 'prompt_manager'):
+                    self.prompt_manager = parent.prompt_manager
+                elif hasattr(parent, 'main_window') and hasattr(parent.main_window, 'prompt_manager'):
+                    self.prompt_manager = parent.main_window.prompt_manager
+                else:
+                    self.prompt_manager = None
+            except:
+                self.prompt_manager = None
 
         # 初始化UI
         self._init_ui()
@@ -194,14 +210,45 @@ class AIGenerateDialog(QDialog):
         template_layout.addWidget(QLabel("选择模板:"))
 
         self.template_combo = QComboBox()
-        self.template_combo.addItems(["默认模板", "详细描述模板", "简洁模板", "创意模板"])
+
+        # 加载模板
+        if self.prompt_manager:
+            # 添加默认选项
+            self.template_combo.addItem("选择提示词模板")
+
+            # 根据字段名称确定模板分类
+            category = "general"
+            if self.field_name == "章节内容":
+                category = "chapter"
+            elif self.field_name == "章节摘要":
+                category = "chapter_summary"
+            elif self.field_name in ["标题", "中心思想", "故事梗概", "世界观设定"]:
+                category = "outline"
+
+            # 加载对应分类的模板
+            templates = self.prompt_manager.get_templates_by_category(category)
+            for template in templates:
+                self.template_combo.addItem(template.name)
+        else:
+            # 如果没有提示词管理器，使用默认模板
+            self.template_combo.addItems(["默认模板", "详细描述模板", "简洁模板", "创意模板"])
+
         self.template_combo.currentIndexChanged.connect(self._on_template_changed)
         template_layout.addWidget(self.template_combo)
 
-        # 添加保存模板按钮
+        # 添加模板管理按钮
+        self.new_template_button = QPushButton("新建模板")
+        self.new_template_button.clicked.connect(self._create_new_template)
+        template_layout.addWidget(self.new_template_button)
+
         self.save_template_button = QPushButton("保存为模板")
         self.save_template_button.clicked.connect(self._save_as_template)
         template_layout.addWidget(self.save_template_button)
+
+        self.delete_template_button = QPushButton("删除模板")
+        self.delete_template_button.clicked.connect(self._delete_template)
+        self.delete_template_button.setEnabled(False)  # 初始禁用
+        template_layout.addWidget(self.delete_template_button)
 
         template_layout.addStretch()
         prompt_layout.addLayout(template_layout)
@@ -284,6 +331,21 @@ class AIGenerateDialog(QDialog):
 
     def _on_template_changed(self, index):
         """模板选择变更事件"""
+        # 启用/禁用删除模板按钮
+        if index <= 0 or not self.prompt_manager:  # 第一项是提示文本或没有提示词管理器
+            self.delete_template_button.setEnabled(False)
+        else:
+            self.delete_template_button.setEnabled(True)
+
+        # 如果有提示词管理器且选择了有效模板
+        if self.prompt_manager and index > 0:
+            template_name = self.template_combo.currentText()
+            template = self.prompt_manager.get_template(template_name)
+            if template:
+                self.prompt_edit.setPlainText(template.content)
+                return
+
+        # 如果没有提示词管理器或没有选择有效模板，使用默认模板
         # 构建基本提示词前缀（包含总大纲信息和上下文信息）
         prefix = f"请根据以下内容，生成一个新的{self.field_name}：\n\n"
 
@@ -318,29 +380,185 @@ class AIGenerateDialog(QDialog):
         # 添加当前文本
         content = f"{self.current_text}\n\n"
 
-        templates = {
-            0: prefix + content + "要求：\n1. 保持原有风格\n2. 更加生动详细\n3. 逻辑连贯\n4. 与小说的整体设定保持一致",
-            1: prefix + content + "要求：\n1. 保持原有风格和主题\n2. 增加细节描写和背景信息\n3. 使用丰富的修辞手法\n4. 确保逻辑连贯和情节合理\n5. 与小说的整体设定保持一致",
-            2: prefix + content + "要求：\n1. 保持核心内容和主题\n2. 使用简洁有力的语言\n3. 去除冗余信息\n4. 突出重点\n5. 与小说的整体设定保持一致",
-            3: prefix + content + "要求：\n1. 保持基本主题\n2. 加入创新的元素和视角\n3. 使用富有想象力的语言\n4. 创造出令人惊喜的内容\n5. 与小说的整体设定保持一致"
-        }
+        # 如果没有提示词管理器，使用默认模板
+        if not self.prompt_manager:
+            templates = {
+                0: prefix + content + "要求：\n1. 保持原有风格\n2. 更加生动详细\n3. 逻辑连贯\n4. 与小说的整体设定保持一致",
+                1: prefix + content + "要求：\n1. 保持原有风格和主题\n2. 增加细节描写和背景信息\n3. 使用丰富的修辞手法\n4. 确保逻辑连贯和情节合理\n5. 与小说的整体设定保持一致",
+                2: prefix + content + "要求：\n1. 保持核心内容和主题\n2. 使用简洁有力的语言\n3. 去除冗余信息\n4. 突出重点\n5. 与小说的整体设定保持一致",
+                3: prefix + content + "要求：\n1. 保持基本主题\n2. 加入创新的元素和视角\n3. 使用富有想象力的语言\n4. 创造出令人惊喜的内容\n5. 与小说的整体设定保持一致"
+            }
 
-        if index in templates:
-            self.prompt_edit.setPlainText(templates[index])
+            if index in templates:
+                self.prompt_edit.setPlainText(templates[index])
+
+    def _create_new_template(self):
+        """创建新模板"""
+        if not self.prompt_manager:
+            QMessageBox.warning(self, "错误", "无法获取提示词管理器")
+            return
+
+        # 创建编辑对话框
+        dialog = QDialog(self)
+        dialog.setWindowTitle("创建新模板")
+        dialog.resize(600, 500)
+
+        layout = QVBoxLayout(dialog)
+
+        # 模板名称
+        name_layout = QHBoxLayout()
+        name_layout.addWidget(QLabel("模板名称:"))
+        name_edit = QLineEdit(f"自定义{self.field_name}模板_{len(self.prompt_manager.get_templates_by_category('general')) + 1}")
+        name_layout.addWidget(name_edit)
+        layout.addLayout(name_layout)
+
+        # 模板描述
+        desc_layout = QHBoxLayout()
+        desc_layout.addWidget(QLabel("模板描述:"))
+        desc_edit = QLineEdit(f"自定义{self.field_name}生成模板")
+        desc_layout.addWidget(desc_edit)
+        layout.addLayout(desc_layout)
+
+        # 模板分类
+        category_layout = QHBoxLayout()
+        category_layout.addWidget(QLabel("模板分类:"))
+        category_edit = QLineEdit()
+
+        # 根据字段名称设置默认分类
+        if self.field_name == "章节内容":
+            category_edit.setText("chapter")
+        elif self.field_name == "章节摘要":
+            category_edit.setText("chapter_summary")
+        elif self.field_name in ["标题", "中心思想", "故事梗概", "世界观设定"]:
+            category_edit.setText("outline")
+        else:
+            category_edit.setText("general")
+
+        category_layout.addWidget(category_edit)
+        layout.addLayout(category_layout)
+
+        # 模板内容
+        content_label = QLabel("模板内容:")
+        layout.addWidget(content_label)
+
+        content_edit = QTextEdit()
+        content_edit.setPlainText(self.prompt_edit.toPlainText())
+        layout.addWidget(content_edit)
+
+        # 按钮
+        button_layout = QHBoxLayout()
+
+        save_button = QPushButton("保存")
+        save_button.clicked.connect(dialog.accept)
+        button_layout.addWidget(save_button)
+
+        cancel_button = QPushButton("取消")
+        cancel_button.clicked.connect(dialog.reject)
+        button_layout.addWidget(cancel_button)
+
+        layout.addLayout(button_layout)
+
+        # 显示对话框
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            template_name = name_edit.text()
+            template_content = content_edit.toPlainText()
+            template_desc = desc_edit.text()
+            template_category = category_edit.text()
+
+            # 添加模板
+            success = self.prompt_manager.add_template(
+                template_name,
+                template_content,
+                template_category,
+                template_desc
+            )
+
+            if success:
+                # 添加到下拉框
+                self.template_combo.addItem(template_name)
+                self.template_combo.setCurrentText(template_name)
+
+                QMessageBox.information(self, "保存成功", f"模板 '{template_name}' 已创建")
+            else:
+                QMessageBox.warning(self, "保存失败", f"模板 '{template_name}' 已存在或保存失败")
 
     def _save_as_template(self):
         """保存当前提示词为模板"""
+        if not self.prompt_manager:
+            QMessageBox.warning(self, "错误", "无法获取提示词管理器")
+            return
+
         template_name, ok = QInputDialog.getText(
             self, "保存模板", "请输入模板名称:",
             text=f"自定义{self.field_name}模板"
         )
 
         if ok and template_name:
-            # 这里应该实现模板保存逻辑
-            # 简单起见，这里只是添加到下拉框
-            self.template_combo.addItem(template_name)
-            self.template_combo.setCurrentText(template_name)
-            QMessageBox.information(self, "保存成功", f"模板 '{template_name}' 已保存")
+            # 获取模板描述
+            template_desc, ok = QInputDialog.getText(
+                self, "模板描述", "请输入模板描述:",
+                text=f"基于当前设置创建的{self.field_name}模板"
+            )
+
+            if ok:
+                # 确定模板分类
+                category = "general"
+                if self.field_name == "章节内容":
+                    category = "chapter"
+                elif self.field_name == "章节摘要":
+                    category = "chapter_summary"
+                elif self.field_name in ["标题", "中心思想", "故事梗概", "世界观设定"]:
+                    category = "outline"
+
+                # 添加模板
+                success = self.prompt_manager.add_template(
+                    template_name,
+                    self.prompt_edit.toPlainText(),
+                    category,
+                    template_desc
+                )
+
+                if success:
+                    # 添加到下拉框
+                    self.template_combo.addItem(template_name)
+                    self.template_combo.setCurrentText(template_name)
+
+                    QMessageBox.information(self, "保存成功", f"模板 '{template_name}' 已保存")
+                else:
+                    QMessageBox.warning(self, "保存失败", f"模板 '{template_name}' 已存在或保存失败")
+
+    def _delete_template(self):
+        """删除当前选中的模板"""
+        if not self.prompt_manager:
+            QMessageBox.warning(self, "错误", "无法获取提示词管理器")
+            return
+
+        if self.template_combo.currentIndex() <= 0:
+            return
+
+        template_name = self.template_combo.currentText()
+
+        # 确认删除
+        reply = QMessageBox.question(
+            self,
+            "确认删除",
+            f"确定要删除模板 '{template_name}' 吗？此操作不可撤销。",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+
+        if reply == QMessageBox.StandardButton.Yes:
+            # 删除模板
+            success = self.prompt_manager.delete_template(template_name)
+
+            if success:
+                # 从下拉框中移除
+                current_index = self.template_combo.currentIndex()
+                self.template_combo.removeItem(current_index)
+
+                QMessageBox.information(self, "删除成功", f"模板 '{template_name}' 已删除")
+            else:
+                QMessageBox.warning(self, "删除失败", f"模板 '{template_name}' 删除失败")
 
     def _copy_result(self):
         """复制结果到剪贴板"""
