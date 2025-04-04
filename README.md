@@ -39,20 +39,54 @@ LLMAI-writer 是一个功能强大的 AI 辅助小说创作工具，利用最先
 
 ## 🚀 安装说明
 
-### 1. 克隆仓库
+您可以选择使用传统方式或 Docker 方式安装和运行 LLMAI-writer。
+
+### 方式一：传统安装
+
+#### 1. 克隆仓库
 ```bash
 git clone https://github.com/WhatRUHuh/LLMAI-writer.git
 cd LLMAI-writer
 ```
 
-### 2. 安装依赖
+#### 2. 安装依赖
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. 配置 API 密钥
+#### 3. 配置 API 密钥
 1. 复制 `config.example.ini` 为 `config.ini`
 2. 编辑 `config.ini`，填入您的 API 密钥和其他配置
+
+### 方式二：Docker 安装
+
+> **注意：**Docker 版本基于 Python 3.12 构建，无需关心本地 Python 版本兼容问题。
+
+#### 前提条件
+- 安装 [Docker](https://www.docker.com/get-started)
+- 安装 [Docker Compose](https://docs.docker.com/compose/install/)
+
+#### Linux/macOS 用户
+
+1. 克隆仓库并进入项目目录
+2. 运行启动脚本：
+   ```bash
+   chmod +x run_docker.sh
+   ./run_docker.sh
+   ```
+
+#### Windows 用户
+
+1. 克隆仓库并进入项目目录
+2. 运行启动脚本：
+   ```
+   run_docker.bat
+   ```
+
+#### 配置和数据存储
+
+- 首次运行时，复制 `config.example.ini` 为 `config.ini` 并进行配置
+- 小说文件将保存在 `novels` 目录中，该目录会在容器和主机之间共享
 
 ## 📖 使用指南
 
@@ -131,7 +165,9 @@ model_name = your_model_name
 
 ## 🔧 常见问题
 
-### 安装依赖失败
+### 传统安装相关问题
+
+#### 安装依赖失败
 如果安装依赖时遇到问题，可以尝试手动安装主要依赖：
 ```bash
 pip install PyQt6 openai anthropic google-genai
@@ -141,19 +177,48 @@ pip install PyQt6 openai anthropic google-genai
 
 如果您的 Python 版本低于 3.9，您有以下选择：
 1. **升级 Python**：强烈推荐升级到 Python 3.9 或更高版本以获得完整功能
-2. **移除 Gemini 相关代码**：如果无法升级 Python，您可以从项目中删除与 Gemini 相关的代码（主要在 `models/gemini_model.py` 和 UI 中的相关选项）
+2. **使用 Docker 版本**：使用本项目提供的 Docker 配置，无需关心 Python 版本兼容问题
+3. **移除 Gemini 相关代码**：如果无法升级 Python 且不想使用 Docker，您可以从项目中删除与 Gemini 相关的代码（主要在 `models/gemini_model.py` 和 UI 中的相关选项）
 
 注意：根据 Google 官方文档，Gemini API 的 Python SDK 仅支持 Python 3.9 及更高版本，不存在兼容旧版本 Python 的方法。
 
-### API 连接问题
+#### API 连接问题
 - 确保您的 API 密钥正确
 - 如果需要代理访问 API，请在配置文件中正确设置代理
 - 检查网络连接是否正常
 
-### 界面显示异常
+#### 界面显示异常
 - 尝试重启应用程序
 - 检查是否安装了最新版本的 PyQt6
 - 在不同的操作系统上，界面可能有细微差异
+
+### Docker 相关问题
+
+#### 显示问题
+如果应用程序窗口无法显示，可能是X11转发配置问题。尝试以下解决方案：
+
+1. Linux用户确保已允许Docker访问X服务器：
+   ```bash
+   xhost +local:docker
+   ```
+
+2. 检查DISPLAY环境变量是否正确设置
+
+3. Windows用户可能需要安装X服务器（如VcXsrv或Xming）并进行适当配置
+
+#### 字体问题
+如果中文字体显示不正确，可能需要安装额外的字体包。编辑Dockerfile，添加更多字体包，然后重新构建镜像：
+
+```bash
+docker-compose build --no-cache
+```
+
+#### 数据持久化
+如果您需要在容器重启后保留数据，请确保：
+
+1. `config.ini` 文件在主机上正确配置
+2. `novels` 目录已创建并正确挂载
+3. 不要删除这些挂载的目录和文件
 
 ## 📄 许可证
 
