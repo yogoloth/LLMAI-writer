@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
     QPushButton, QGroupBox, QFormLayout, QCheckBox,
     QMessageBox, QSpinBox, QComboBox, QDoubleSpinBox,
-    QInputDialog
+    QInputDialog, QDialog
 )
 from PyQt6.QtCore import Qt
 
@@ -106,23 +106,35 @@ class SettingsTab(QWidget):
         self.custom_openai_enabled = QCheckBox("启用自定义OpenAI兼容API")
         custom_openai_layout.addRow("", self.custom_openai_enabled)
 
-        # 添加自定义模型选择下拉框
-        self.custom_model_combo = QComboBox()
-        self.custom_model_combo.addItem("选择自定义模型")
-        self.custom_model_combo.currentIndexChanged.connect(self._on_custom_model_selected)
-        custom_openai_layout.addRow("选择模型:", self.custom_model_combo)
-
         # 添加API密钥、模型名称和URL输入框
         self.custom_openai_api_key = QLineEdit()
         self.custom_openai_api_key.setEchoMode(QLineEdit.EchoMode.Password)
         custom_openai_layout.addRow("API密钥:", self.custom_openai_api_key)
 
-        self.custom_openai_model_name = QLineEdit()
-        custom_openai_layout.addRow("模型名称:", self.custom_openai_model_name)
+        self.custom_openai_model = QLineEdit()
+        custom_openai_layout.addRow("模型名称:", self.custom_openai_model)
 
         self.custom_openai_url = QLineEdit()
         self.custom_openai_url.setPlaceholderText("https://your-custom-api-endpoint.com/v1/chat/completions")
         custom_openai_layout.addRow("API地址:", self.custom_openai_url)
+
+        custom_openai_group.setLayout(custom_openai_layout)
+        main_layout.addWidget(custom_openai_group)
+
+        # 创建自定义模型管理组
+        custom_models_group = QGroupBox("自定义模型管理")
+        custom_models_layout = QVBoxLayout()
+
+        # 添加自定义模型选择下拉框
+        model_selection_layout = QHBoxLayout()
+        model_selection_layout.addWidget(QLabel("选择模型:"))
+
+        self.custom_model_combo = QComboBox()
+        self.custom_model_combo.addItem("选择自定义模型")
+        self.custom_model_combo.currentIndexChanged.connect(self._on_custom_model_selected)
+        model_selection_layout.addWidget(self.custom_model_combo)
+
+        custom_models_layout.addLayout(model_selection_layout)
 
         # 添加按钮布局
         buttons_layout = QHBoxLayout()
@@ -131,20 +143,20 @@ class SettingsTab(QWidget):
         self.add_model_button.clicked.connect(self._add_custom_model)
         buttons_layout.addWidget(self.add_model_button)
 
-        self.update_model_button = QPushButton("更新模型")
-        self.update_model_button.clicked.connect(self._update_custom_model)
-        self.update_model_button.setEnabled(False)
-        buttons_layout.addWidget(self.update_model_button)
+        self.edit_model_button = QPushButton("编辑模型")
+        self.edit_model_button.clicked.connect(self._edit_custom_model)
+        self.edit_model_button.setEnabled(False)
+        buttons_layout.addWidget(self.edit_model_button)
 
         self.delete_model_button = QPushButton("删除模型")
         self.delete_model_button.clicked.connect(self._delete_custom_model)
         self.delete_model_button.setEnabled(False)
         buttons_layout.addWidget(self.delete_model_button)
 
-        custom_openai_layout.addRow("", buttons_layout)
+        custom_models_layout.addLayout(buttons_layout)
 
-        custom_openai_group.setLayout(custom_openai_layout)
-        main_layout.addWidget(custom_openai_group)
+        custom_models_group.setLayout(custom_models_layout)
+        main_layout.addWidget(custom_models_group)
 
         # ModelScope API设置已在代码中配置好，不需要在UI中显示
 
@@ -199,6 +211,11 @@ class SettingsTab(QWidget):
             self.custom_openai_enabled.setChecked(custom_openai_config.getboolean("enabled", False))
             self.custom_openai_url.setText(custom_openai_config.get("api_url", ""))
 
+        # 加载自定义OpenAI API密钥和模型名称
+        if "API_KEYS" in config and "MODELS" in config:
+            self.custom_openai_api_key.setText(config["API_KEYS"].get("custom_openai_api_key", ""))
+            self.custom_openai_model.setText(config["MODELS"].get("custom_openai_model", ""))
+
         # 加载自定义模型列表
         self.custom_model_combo.clear()
         self.custom_model_combo.addItem("选择自定义模型")
@@ -209,12 +226,8 @@ class SettingsTab(QWidget):
             if model_name:
                 self.custom_model_combo.addItem(model_name)
 
-        # 清空输入框
-        self.custom_openai_api_key.clear()
-        self.custom_openai_model_name.clear()
-
-        # 禁用更新和删除按钮
-        self.update_model_button.setEnabled(False)
+        # 禁用编辑和删除按钮
+        self.edit_model_button.setEnabled(False)
         self.delete_model_button.setEnabled(False)
 
         # ModelScope API设置已在代码中配置好，不需要在UI中显示
@@ -267,23 +280,18 @@ class SettingsTab(QWidget):
                 config["MODELS"]["custom_openai_model"] = model_config.get('model_name', '')
         else:
             # 否则使用输入框中的模型名称
-            config["MODELS"]["custom_openai_model"] = self.custom_openai_model_name.text()
+            config["MODELS"]["custom_openai_model"] = self.custom_openai_model.text()
 
         # 保存自定义OpenAI API设置
         if "CUSTOM_OPENAI" not in config:
             config["CUSTOM_OPENAI"] = {}
 
         config["CUSTOM_OPENAI"]["enabled"] = str(self.custom_openai_enabled.isChecked()).lower()
+        config["CUSTOM_OPENAI"]["api_url"] = self.custom_openai_url.text()
 
-        # 如果选中了自定义模型，则使用选中模型的API地址
-        if self.custom_model_combo.currentIndex() > 0:
-            model_name = self.custom_model_combo.currentText()
-            model_config = self.config_manager.get_custom_openai_model(model_name)
-            if model_config:
-                config["CUSTOM_OPENAI"]["api_url"] = model_config.get('api_url', '')
-        else:
-            # 否则使用输入框中的API地址
-            config["CUSTOM_OPENAI"]["api_url"] = self.custom_openai_url.text()
+        # 保存自定义OpenAI API密钥和模型名称
+        config["API_KEYS"]["custom_openai_api_key"] = self.custom_openai_api_key.text()
+        config["MODELS"]["custom_openai_model"] = self.custom_openai_model.text()
 
         # ModelScope API设置已在代码中配置好，不需要在UI中显示
 
@@ -303,59 +311,81 @@ class SettingsTab(QWidget):
     def _on_custom_model_selected(self, index):
         """处理自定义模型选择事件"""
         if index <= 0:  # 选择了第一项（提示文本）
-            # 清空输入框
-            self.custom_openai_api_key.clear()
-            self.custom_openai_model_name.clear()
-            self.custom_openai_url.clear()
-
-            # 禁用更新和删除按钮
-            self.update_model_button.setEnabled(False)
+            # 禁用编辑和删除按钮
+            self.edit_model_button.setEnabled(False)
             self.delete_model_button.setEnabled(False)
             return
 
-        # 获取选中的模型名称
-        model_name = self.custom_model_combo.currentText()
-
-        # 从配置中获取模型信息
-        model_config = self.config_manager.get_custom_openai_model(model_name)
-        if model_config:
-            # 更新输入框
-            self.custom_openai_api_key.setText(model_config.get('api_key', ''))
-            self.custom_openai_model_name.setText(model_config.get('model_name', ''))
-            self.custom_openai_url.setText(model_config.get('api_url', ''))
-
-            # 启用更新和删除按钮
-            self.update_model_button.setEnabled(True)
-            self.delete_model_button.setEnabled(True)
+        # 启用编辑和删除按钮
+        self.edit_model_button.setEnabled(True)
+        self.delete_model_button.setEnabled(True)
 
     def _add_custom_model(self):
         """添加新的自定义模型"""
-        # 获取输入的模型信息
-        model_name, ok = QInputDialog.getText(self, "添加模型", "请输入模型名称:")
-        if not ok or not model_name.strip():
+        # 创建对话框
+        dialog = QDialog(self)
+        dialog.setWindowTitle("添加自定义模型")
+        dialog.resize(500, 200)
+
+        # 创建表单布局
+        layout = QFormLayout(dialog)
+
+        # 添加输入字段
+        name_edit = QLineEdit()
+        layout.addRow("模型名称:", name_edit)
+
+        api_key_edit = QLineEdit()
+        api_key_edit.setEchoMode(QLineEdit.EchoMode.Password)
+        layout.addRow("API密钥:", api_key_edit)
+
+        model_name_edit = QLineEdit()
+        layout.addRow("模型标识:", model_name_edit)
+
+        api_url_edit = QLineEdit("https://api.openai.com/v1/chat/completions")
+        layout.addRow("API地址:", api_url_edit)
+
+        # 添加按钮
+        button_box = QHBoxLayout()
+        save_button = QPushButton("保存")
+        save_button.clicked.connect(dialog.accept)
+        button_box.addWidget(save_button)
+
+        cancel_button = QPushButton("取消")
+        cancel_button.clicked.connect(dialog.reject)
+        button_box.addWidget(cancel_button)
+
+        layout.addRow("", button_box)
+
+        # 显示对话框
+        if dialog.exec() != QDialog.DialogCode.Accepted:
             return
 
-        # 检查模型名称是否已存在
-        if self.config_manager.get_custom_openai_model(model_name):
-            QMessageBox.warning(self, "添加失败", f"模型 '{model_name}' 已存在")
-            return
-
-        # 获取当前输入框中的值
-        api_key = self.custom_openai_api_key.text().strip()
-        model_name_value = self.custom_openai_model_name.text().strip()
-        api_url = self.custom_openai_url.text().strip()
+        # 获取输入的值
+        model_name = name_edit.text().strip()
+        api_key = api_key_edit.text().strip()
+        model_name_value = model_name_edit.text().strip()
+        api_url = api_url_edit.text().strip()
 
         # 验证输入
+        if not model_name:
+            QMessageBox.warning(self, "验证失败", "模型名称不能为空")
+            return
+
         if not api_key:
             QMessageBox.warning(self, "验证失败", "API密钥不能为空")
             return
 
         if not model_name_value:
-            QMessageBox.warning(self, "验证失败", "模型名称不能为空")
+            QMessageBox.warning(self, "验证失败", "模型标识不能为空")
             return
 
         if not api_url:
             QMessageBox.warning(self, "验证失败", "API地址不能为空")
+            return
+
+        # 检查模型名称是否已存在
+        if self.config_manager.get_custom_openai_model(model_name):
+            QMessageBox.warning(self, "添加失败", f"模型 '{model_name}' 已存在")
             return
 
         # 创建模型配置
@@ -374,26 +404,66 @@ class SettingsTab(QWidget):
             self.custom_model_combo.addItem(model_name)
             self.custom_model_combo.setCurrentText(model_name)
 
-            # 启用自定义模型功能
-            if not self.custom_openai_enabled.isChecked():
-                self.custom_openai_enabled.setChecked(True)
-
             QMessageBox.information(self, "添加成功", f"模型 '{model_name}' 已添加")
         else:
             QMessageBox.warning(self, "添加失败", f"模型 '{model_name}' 添加失败")
 
-    def _update_custom_model(self):
-        """更新选中的自定义模型"""
+    def _edit_custom_model(self):
+        """编辑选中的自定义模型"""
         # 获取当前选中的模型
         if self.custom_model_combo.currentIndex() <= 0:
             return
 
         model_name = self.custom_model_combo.currentText()
+        model_config = self.config_manager.get_custom_openai_model(model_name)
 
-        # 获取当前输入框中的值
-        api_key = self.custom_openai_api_key.text().strip()
-        model_name_value = self.custom_openai_model_name.text().strip()
-        api_url = self.custom_openai_url.text().strip()
+        if not model_config:
+            QMessageBox.warning(self, "编辑失败", f"无法获取模型 '{model_name}' 的配置")
+            return
+
+        # 创建对话框
+        dialog = QDialog(self)
+        dialog.setWindowTitle(f"编辑模型: {model_name}")
+        dialog.resize(500, 200)
+
+        # 创建表单布局
+        layout = QFormLayout(dialog)
+
+        # 添加输入字段
+        name_edit = QLineEdit(model_config.get('name', ''))
+        name_edit.setReadOnly(True)  # 模型名称不可编辑
+        layout.addRow("模型名称:", name_edit)
+
+        api_key_edit = QLineEdit(model_config.get('api_key', ''))
+        api_key_edit.setEchoMode(QLineEdit.EchoMode.Password)
+        layout.addRow("API密钥:", api_key_edit)
+
+        model_name_edit = QLineEdit(model_config.get('model_name', ''))
+        layout.addRow("模型标识:", model_name_edit)
+
+        api_url_edit = QLineEdit(model_config.get('api_url', ''))
+        layout.addRow("API地址:", api_url_edit)
+
+        # 添加按钮
+        button_box = QHBoxLayout()
+        save_button = QPushButton("保存")
+        save_button.clicked.connect(dialog.accept)
+        button_box.addWidget(save_button)
+
+        cancel_button = QPushButton("取消")
+        cancel_button.clicked.connect(dialog.reject)
+        button_box.addWidget(cancel_button)
+
+        layout.addRow("", button_box)
+
+        # 显示对话框
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return
+
+        # 获取输入的值
+        api_key = api_key_edit.text().strip()
+        model_name_value = model_name_edit.text().strip()
+        api_url = api_url_edit.text().strip()
 
         # 验证输入
         if not api_key:
@@ -401,7 +471,7 @@ class SettingsTab(QWidget):
             return
 
         if not model_name_value:
-            QMessageBox.warning(self, "验证失败", "模型名称不能为空")
+            QMessageBox.warning(self, "验证失败", "模型标识不能为空")
             return
 
         if not api_url:
@@ -409,7 +479,7 @@ class SettingsTab(QWidget):
             return
 
         # 创建模型配置
-        model_config = {
+        updated_config = {
             'name': model_name,
             'api_key': api_key,
             'model_name': model_name_value,
@@ -417,7 +487,7 @@ class SettingsTab(QWidget):
         }
 
         # 更新模型
-        success = self.config_manager.update_custom_openai_model(model_name, model_config)
+        success = self.config_manager.update_custom_openai_model(model_name, updated_config)
 
         if success:
             QMessageBox.information(self, "更新成功", f"模型 '{model_name}' 已更新")
@@ -452,13 +522,8 @@ class SettingsTab(QWidget):
             current_index = self.custom_model_combo.currentIndex()
             self.custom_model_combo.removeItem(current_index)
 
-            # 清空输入框
-            self.custom_openai_api_key.clear()
-            self.custom_openai_model_name.clear()
-            self.custom_openai_url.clear()
-
-            # 禁用更新和删除按钮
-            self.update_model_button.setEnabled(False)
+            # 禁用编辑和删除按钮
+            self.edit_model_button.setEnabled(False)
             self.delete_model_button.setEnabled(False)
 
             QMessageBox.information(self, "删除成功", f"模型 '{model_name}' 已删除")
