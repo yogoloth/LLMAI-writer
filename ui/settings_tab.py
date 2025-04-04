@@ -118,19 +118,7 @@ class SettingsTab(QWidget):
         custom_openai_group.setLayout(custom_openai_layout)
         main_layout.addWidget(custom_openai_group)
 
-        # 创建ModelScope API设置组
-        modelscope_group = QGroupBox("ModelScope API设置")
-        modelscope_layout = QFormLayout()
-
-        self.modelscope_enabled = QCheckBox("启用ModelScope API")
-        modelscope_layout.addRow("", self.modelscope_enabled)
-
-        self.modelscope_url = QLineEdit()
-        self.modelscope_url.setPlaceholderText("https://api-inference.modelscope.cn/v1/")
-        modelscope_layout.addRow("API地址:", self.modelscope_url)
-
-        modelscope_group.setLayout(modelscope_layout)
-        main_layout.addWidget(modelscope_group)
+        # ModelScope API设置已在代码中配置好，不需要在UI中显示
 
         # 创建按钮布局
         button_layout = QHBoxLayout()
@@ -183,11 +171,7 @@ class SettingsTab(QWidget):
             self.custom_openai_enabled.setChecked(custom_openai_config.getboolean("enabled", False))
             self.custom_openai_url.setText(custom_openai_config.get("api_url", ""))
 
-        # 加载ModelScope API设置
-        if "MODELSCOPE" in config:
-            modelscope_config = config["MODELSCOPE"]
-            self.modelscope_enabled.setChecked(modelscope_config.getboolean("enabled", False))
-            self.modelscope_url.setText(modelscope_config.get("base_url", "https://api-inference.modelscope.cn/v1/"))
+        # ModelScope API设置已在代码中配置好，不需要在UI中显示
 
     def save_settings(self):
         """保存设置"""
@@ -228,12 +212,7 @@ class SettingsTab(QWidget):
         config["CUSTOM_OPENAI"]["enabled"] = str(self.custom_openai_enabled.isChecked()).lower()
         config["CUSTOM_OPENAI"]["api_url"] = self.custom_openai_url.text()
 
-        # 保存ModelScope API设置
-        if "MODELSCOPE" not in config:
-            config["MODELSCOPE"] = {}
-
-        config["MODELSCOPE"]["enabled"] = str(self.modelscope_enabled.isChecked()).lower()
-        config["MODELSCOPE"]["base_url"] = self.modelscope_url.text()
+        # ModelScope API设置已在代码中配置好，不需要在UI中显示
 
         # 保存配置
         self.config_manager.save_config()
