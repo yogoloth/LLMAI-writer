@@ -107,10 +107,11 @@ class ConfigManager:
 
     def is_custom_openai_enabled(self):
         """检查自定义OpenAI API是否启用"""
+        # 默认启用自定义OpenAI API
         if 'CUSTOM_OPENAI' not in self.config:
-            return False
+            return True
 
-        return self.config['CUSTOM_OPENAI'].getboolean('enabled', fallback=False)
+        return self.config['CUSTOM_OPENAI'].getboolean('enabled', fallback=True)
 
     def is_modelscope_enabled(self):
         """检查ModelScope API是否启用"""
