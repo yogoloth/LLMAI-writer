@@ -52,6 +52,7 @@ class ChapterAnalysisTab(QWidget):
         model_layout = QFormLayout()
 
         self.model_combo = QComboBox()
+        # 只添加标准模型，不显示具体的自定义模型
         self.model_combo.addItems(["GPT", "Claude", "Gemini", "自定义OpenAI", "ModelScope"])
         model_layout.addRow("AI模型:", self.model_combo)
 
@@ -468,6 +469,11 @@ class ChapterAnalysisTab(QWidget):
             if key in self.analysis_result and self.analysis_result[key]:
                 self.result_tabs.setCurrentIndex(min(i, self.result_tabs.count() - 1))
                 break
+
+    def _get_available_models(self):
+        """获取可用的模型列表"""
+        # 只返回标准模型，不显示具体的自定义模型
+        return ["GPT", "Claude", "Gemini", "自定义OpenAI", "ModelScope"]
 
     def _extract_section(self, text, section_title, *other_titles):
         """从文本中提取特定部分"""

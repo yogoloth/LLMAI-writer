@@ -169,13 +169,8 @@ class OutlineEditTab(QWidget):
 
     def _get_available_models(self):
         """获取可用的模型列表"""
-        models = ["GPT", "Claude", "Gemini", "自定义OpenAI", "ModelScope"]
-
-        # 添加自定义模型
-        if hasattr(self.main_window, 'custom_openai_models') and self.main_window.custom_openai_models:
-            models.extend(list(self.main_window.custom_openai_models.keys()))
-
-        return models
+        # 只返回标准模型，不显示具体的自定义模型
+        return ["GPT", "Claude", "Gemini", "自定义OpenAI", "ModelScope"]
 
     def update_outline(self):
         """更新大纲（供外部调用）"""
