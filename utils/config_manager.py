@@ -38,13 +38,13 @@ class ConfigManager:
         }
 
         self.config['CUSTOM_OPENAI'] = {
-            'enabled': 'false',
+            # 不需要enabled设置，始终启用
             'api_url': 'https://your-custom-api-endpoint.com/v1/chat/completions'
         }
 
         # 添加自定义OpenAI模型配置部分
         self.config['CUSTOM_OPENAI_MODELS'] = {
-            'enabled': 'false',
+            # 不需要enabled设置，始终启用
             'models': '[]'  # 使用JSON字符串存储模型列表
         }
 
@@ -107,11 +107,8 @@ class ConfigManager:
 
     def is_custom_openai_enabled(self):
         """检查自定义OpenAI API是否启用"""
-        # 默认启用自定义OpenAI API
-        if 'CUSTOM_OPENAI' not in self.config:
-            return True
-
-        return self.config['CUSTOM_OPENAI'].getboolean('enabled', fallback=True)
+        # 始终启用自定义OpenAI API
+        return True
 
     def is_modelscope_enabled(self):
         """检查ModelScope API是否启用"""
@@ -122,11 +119,11 @@ class ConfigManager:
         return self.config['MODELSCOPE'].getboolean('enabled', fallback=True)
 
     def is_custom_openai_models_enabled(self):
-        """检查多个自定义OpenAI模型是否启用"""
-        if 'CUSTOM_OPENAI_MODELS' not in self.config:
-            return False
+        """检查多个自定义OpenAI模型是否启用
 
-        return self.config['CUSTOM_OPENAI_MODELS'].getboolean('enabled', fallback=False)
+        注意：多个自定义OpenAI模型始终启用，不需要额外的启用设置
+        """
+        return True
 
     def get_custom_openai_models(self):
         """获取所有自定义OpenAI模型配置"""
@@ -151,7 +148,7 @@ class ConfigManager:
         """
         if 'CUSTOM_OPENAI_MODELS' not in self.config:
             self.config['CUSTOM_OPENAI_MODELS'] = {}
-            self.config['CUSTOM_OPENAI_MODELS']['enabled'] = 'true'
+            # 不需要enabled设置，始终启用
             self.config['CUSTOM_OPENAI_MODELS']['models'] = '[]'
 
         # 获取当前模型列表
@@ -229,9 +226,7 @@ class ConfigManager:
                 import json
                 self.config['CUSTOM_OPENAI_MODELS']['models'] = json.dumps(models, ensure_ascii=False)
 
-                # 如果没有模型了，禁用自定义模型功能
-                if not models:
-                    self.config['CUSTOM_OPENAI_MODELS']['enabled'] = 'false'
+                # 即使没有模型了，也不需要禁用自定义模型功能，始终启用
 
                 # 保存配置
                 self.save_config()
