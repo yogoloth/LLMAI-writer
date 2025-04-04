@@ -98,9 +98,7 @@ class SettingsTab(QWidget):
         custom_openai_group = QGroupBox("自定义OpenAI兼容API设置")
         custom_openai_layout = QFormLayout()
 
-        self.custom_openai_enabled = QCheckBox("启用自定义OpenAI兼容API")
-        self.custom_openai_enabled.setChecked(True)  # 默认选中
-        custom_openai_layout.addRow("", self.custom_openai_enabled)
+        # 移除启用复选框，默认启用自定义OpenAI兼容API
 
         # 添加API密钥、模型名称和URL输入框
         self.custom_openai_api_key = QLineEdit()
@@ -204,8 +202,7 @@ class SettingsTab(QWidget):
         # 加载自定义OpenAI API设置
         if "CUSTOM_OPENAI" in config:
             custom_openai_config = config["CUSTOM_OPENAI"]
-            # 默认启用自定义OpenAI API
-            self.custom_openai_enabled.setChecked(custom_openai_config.getboolean("enabled", True))
+            # 自定义OpenAI API始终启用，不需要复选框
             self.custom_openai_url.setText(custom_openai_config.get("api_url", ""))
 
         # 加载自定义OpenAI API密钥和模型名称
@@ -276,8 +273,7 @@ class SettingsTab(QWidget):
         if "CUSTOM_OPENAI" not in config:
             config["CUSTOM_OPENAI"] = {}
 
-        # 默认启用自定义OpenAI API
-        config["CUSTOM_OPENAI"]["enabled"] = "true"
+        # 始终启用自定义OpenAI API，不需要enabled设置
         config["CUSTOM_OPENAI"]["api_url"] = self.custom_openai_url.text()
 
         # 保存自定义OpenAI API密钥和模型名称
