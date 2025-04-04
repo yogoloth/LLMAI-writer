@@ -49,7 +49,7 @@ class ConfigManager:
         }
 
         self.config['MODELSCOPE'] = {
-            'enabled': 'false',
+            # 不需要enabled设置，始终启用
             'base_url': 'https://api-inference.modelscope.cn/v1/'
         }
 
@@ -112,11 +112,8 @@ class ConfigManager:
 
     def is_modelscope_enabled(self):
         """检查ModelScope API是否启用"""
-        # ModelScope API在代码中默认启用
-        if 'MODELSCOPE' not in self.config:
-            return True
-
-        return self.config['MODELSCOPE'].getboolean('enabled', fallback=True)
+        # ModelScope API始终启用
+        return True
 
     def is_custom_openai_models_enabled(self):
         """检查多个自定义OpenAI模型是否启用

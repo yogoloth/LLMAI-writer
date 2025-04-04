@@ -307,6 +307,16 @@ class SettingsTab(QWidget):
         self.edit_model_button.setEnabled(True)
         self.delete_model_button.setEnabled(True)
 
+        # 获取选中的模型配置
+        model_name = self.custom_model_combo.currentText()
+        model_config = self.config_manager.get_custom_openai_model(model_name)
+
+        if model_config:
+            # 更新自定义OpenAI兼容API设置
+            self.custom_openai_api_key.setText(model_config.get('api_key', ''))
+            self.custom_openai_model.setText(model_config.get('model_name', ''))
+            self.custom_openai_url.setText(model_config.get('api_url', ''))
+
     def _add_custom_model(self):
         """添加新的自定义模型"""
         # 创建对话框
@@ -390,6 +400,11 @@ class SettingsTab(QWidget):
             # 添加到下拉框
             self.custom_model_combo.addItem(model_name)
             self.custom_model_combo.setCurrentText(model_name)
+
+            # 更新自定义OpenAI兼容API设置
+            self.custom_openai_api_key.setText(model_config.get('api_key', ''))
+            self.custom_openai_model.setText(model_config.get('model_name', ''))
+            self.custom_openai_url.setText(model_config.get('api_url', ''))
 
             QMessageBox.information(self, "添加成功", f"模型 '{model_name}' 已添加")
         else:
@@ -477,6 +492,11 @@ class SettingsTab(QWidget):
         success = self.config_manager.update_custom_openai_model(model_name, updated_config)
 
         if success:
+            # 更新自定义OpenAI兼容API设置
+            self.custom_openai_api_key.setText(updated_config.get('api_key', ''))
+            self.custom_openai_model.setText(updated_config.get('model_name', ''))
+            self.custom_openai_url.setText(updated_config.get('api_url', ''))
+
             QMessageBox.information(self, "更新成功", f"模型 '{model_name}' 已更新")
         else:
             QMessageBox.warning(self, "更新失败", f"模型 '{model_name}' 更新失败")
