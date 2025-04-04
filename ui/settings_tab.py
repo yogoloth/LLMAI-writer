@@ -62,10 +62,7 @@ class SettingsTab(QWidget):
         self.gemini_api_key.setEchoMode(QLineEdit.EchoMode.Password)
         api_layout.addRow("Google API密钥:", self.gemini_api_key)
 
-        # 添加自定义OpenAI兼容API密钥
-        self.custom_openai_api_key = QLineEdit()
-        self.custom_openai_api_key.setEchoMode(QLineEdit.EchoMode.Password)
-        api_layout.addRow("自定义OpenAI API密钥:", self.custom_openai_api_key)
+        # 自定义OpenAI API密钥已移至自定义OpenAI兼容API设置组
 
         # 添加ModelScope API密钥
         self.modelscope_api_key = QLineEdit()
@@ -88,9 +85,7 @@ class SettingsTab(QWidget):
         self.gemini_model = QLineEdit()
         model_layout.addRow("Gemini模型:", self.gemini_model)
 
-        # 添加自定义OpenAI兼容API模型
-        self.custom_openai_model = QLineEdit()
-        model_layout.addRow("自定义OpenAI模型:", self.custom_openai_model)
+        # 自定义OpenAI模型已移至自定义OpenAI兼容API设置组
 
         # 添加ModelScope模型
         self.modelscope_model = QLineEdit()
@@ -202,7 +197,7 @@ class SettingsTab(QWidget):
             self.gpt_model.setText(model_config.get("gpt_model", "gpt-4-turbo"))
             self.claude_model.setText(model_config.get("claude_model", "claude-3-opus-20240229"))
             self.gemini_model.setText(model_config.get("gemini_model", "gemini-2.0-flash"))
-            self.custom_openai_model.setText(model_config.get("custom_openai_model", ""))
+            # self.custom_openai_model已移至自定义OpenAI兼容API设置组
             self.modelscope_model.setText(model_config.get("modelscope_model", "deepseek-ai/DeepSeek-R1"))
 
         # 加载自定义OpenAI API设置
@@ -213,6 +208,7 @@ class SettingsTab(QWidget):
 
         # 加载自定义OpenAI API密钥和模型名称
         if "API_KEYS" in config and "MODELS" in config:
+            # 在自定义OpenAI兼容API设置组中显示
             self.custom_openai_api_key.setText(config["API_KEYS"].get("custom_openai_api_key", ""))
             self.custom_openai_model.setText(config["MODELS"].get("custom_openai_model", ""))
 
@@ -272,15 +268,7 @@ class SettingsTab(QWidget):
         config["MODELS"]["gemini_model"] = self.gemini_model.text()
         config["MODELS"]["modelscope_model"] = self.modelscope_model.text()
 
-        # 如果选中了自定义模型，则使用选中模型的模型名称
-        if self.custom_model_combo.currentIndex() > 0:
-            model_name = self.custom_model_combo.currentText()
-            model_config = self.config_manager.get_custom_openai_model(model_name)
-            if model_config:
-                config["MODELS"]["custom_openai_model"] = model_config.get('model_name', '')
-        else:
-            # 否则使用输入框中的模型名称
-            config["MODELS"]["custom_openai_model"] = self.custom_openai_model.text()
+        # 不再使用选中的自定义模型来覆盖基本设置
 
         # 保存自定义OpenAI API设置
         if "CUSTOM_OPENAI" not in config:
