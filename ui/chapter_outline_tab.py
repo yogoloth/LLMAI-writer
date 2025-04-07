@@ -578,8 +578,12 @@ class ChapterOutlineTab(QWidget):
             if self.current_chapter_index >= 0 and self.current_chapter_index < self.chapter_list.count():
                 self.chapter_list.setCurrentRow(self.current_chapter_index)
 
-    def _save_outline(self):
-        """保存大纲"""
+    def _save_outline(self, show_message=True):
+        """保存大纲
+
+        Args:
+            show_message: 是否显示消息对话框
+        """
         if not self.outline:
             return
 
@@ -602,7 +606,8 @@ class ChapterOutlineTab(QWidget):
         # 保存大纲
         self.main_window.set_outline(self.outline)
 
-        QMessageBox.information(self, "保存成功", "大纲修改已保存")
+        if show_message:
+            QMessageBox.information(self, "保存成功", "大纲修改已保存")
 
     def _generate_with_ai(self, field_name, current_text, set_func):
         """使用AI生成内容"""
@@ -679,6 +684,10 @@ class ChapterOutlineTab(QWidget):
             result = dialog.get_result()
             if result:
                 set_func(result)
+                # 在使用AI生成结果后自动保存
+                self._save_outline()
+                # 不显示保存成功对话框，只显示状态栏消息
+                self.main_window.status_bar_manager.show_message("已使用AI生成结果并保存")
 
     def _get_available_models(self):
         """获取可用的模型列表"""

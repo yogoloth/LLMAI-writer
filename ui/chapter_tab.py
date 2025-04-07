@@ -235,23 +235,30 @@ class ChapterTab(QWidget):
 
     # generate_chapter 方法已移除，使用 _generate_with_ai 方法替代
 
-    def save_chapter(self):
-        """保存章节"""
+    def save_chapter(self, show_message=True):
+        """保存章节
+
+        Args:
+            show_message: 是否显示消息对话框
+        """
         if self.current_volume_index < 0 or self.current_chapter_index < 0:
-            QMessageBox.warning(self, "保存失败", "请先选择一个章节")
+            if show_message:
+                QMessageBox.warning(self, "保存失败", "请先选择一个章节")
             return
 
         # 获取章节内容
         content = self.output_edit.toPlainText()
         if not content:
-            QMessageBox.warning(self, "保存失败", "章节内容为空")
+            if show_message:
+                QMessageBox.warning(self, "保存失败", "章节内容为空")
             return
 
         # 保存章节内容
         self.main_window.set_chapter(self.current_volume_index, self.current_chapter_index, content)
 
         # 显示成功消息
-        QMessageBox.information(self, "保存成功", "章节已保存")
+        if show_message:
+            QMessageBox.information(self, "保存成功", "章节已保存")
 
         # 启用保存按钮
         self.save_button.setEnabled(True)
@@ -338,3 +345,7 @@ class ChapterTab(QWidget):
             if result:
                 self.output_edit.setPlainText(result)
                 self.save_button.setEnabled(True)
+                # 在使用AI生成结果后自动保存
+                self.save_chapter(show_message=False)
+                # 显示状态栏消息
+                self.main_window.status_bar_manager.show_message("已使用AI生成结果并保存")
