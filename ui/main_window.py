@@ -269,6 +269,11 @@ class MainWindow(QMainWindow):
         help_action.triggered.connect(self.show_help)
         toolbar.addAction(help_action)
 
+        # 关于
+        about_action = QAction("关于", self)
+        about_action.triggered.connect(self.show_about)
+        toolbar.addAction(about_action)
+
     def toggle_theme(self):
         """切换主题"""
         self.theme_manager.toggle_theme()
@@ -300,6 +305,18 @@ class MainWindow(QMainWindow):
             self,
             "快捷键帮助",
             f"可用的快捷键:\n\n{shortcut_text}"
+        )
+
+    def show_about(self):
+        """显示关于信息"""
+        # 显示作者信息
+        QMessageBox.information(
+            self,
+            "关于作者",
+            "作者：你算啥呢呀？\n\n"
+            "仓库地址：https://github.com/WhatRUHuh/LLMAI-writer\n\n"
+            "B站主页：https://space.bilibili.com/586587271\n\n"
+            "声明：本项目免费开源，如果你是花钱买的说明你被坑了"
         )
 
     def new_novel(self):
