@@ -124,21 +124,21 @@ class OutlineTab(QWidget):
 
         # 添加卷数设置
         self.volume_count_spin = QSpinBox()
-        self.volume_count_spin.setRange(1, 20)
+        self.volume_count_spin.setRange(1, 999)
         self.volume_count_spin.setValue(3)
         self.volume_count_spin.setSuffix(" 卷")
         info_layout.addRow("卷数:", self.volume_count_spin)
 
         # 添加每卷章节数设置
         self.chapters_per_volume_spin = QSpinBox()
-        self.chapters_per_volume_spin.setRange(3, 30)
+        self.chapters_per_volume_spin.setRange(1, 999)
         self.chapters_per_volume_spin.setValue(10)
         self.chapters_per_volume_spin.setSuffix(" 章/卷")
         info_layout.addRow("每卷章节数:", self.chapters_per_volume_spin)
 
         # 添加每章字数设置
         self.words_per_chapter_spin = QSpinBox()
-        self.words_per_chapter_spin.setRange(1000, 10000)
+        self.words_per_chapter_spin.setRange(100, 100000)
         self.words_per_chapter_spin.setValue(3000)
         self.words_per_chapter_spin.setSingleStep(500)
         self.words_per_chapter_spin.setSuffix(" 字/章")
@@ -150,28 +150,28 @@ class OutlineTab(QWidget):
 
         # 添加主角数量设置
         self.protagonist_count_spin = QSpinBox()
-        self.protagonist_count_spin.setRange(1, 5)
+        self.protagonist_count_spin.setRange(1, 100)
         self.protagonist_count_spin.setValue(1)
         self.protagonist_count_spin.setSuffix(" 个")
         character_layout.addRow("主角数量:", self.protagonist_count_spin)
 
         # 添加重要角色数量设置
         self.important_count_spin = QSpinBox()
-        self.important_count_spin.setRange(0, 10)
+        self.important_count_spin.setRange(0, 100)
         self.important_count_spin.setValue(3)
         self.important_count_spin.setSuffix(" 个")
         character_layout.addRow("重要角色数量:", self.important_count_spin)
 
         # 添加配角数量设置
         self.supporting_count_spin = QSpinBox()
-        self.supporting_count_spin.setRange(0, 20)
+        self.supporting_count_spin.setRange(0, 200)
         self.supporting_count_spin.setValue(5)
         self.supporting_count_spin.setSuffix(" 个")
         character_layout.addRow("配角数量:", self.supporting_count_spin)
 
         # 添加龙套数量设置
         self.minor_count_spin = QSpinBox()
-        self.minor_count_spin.setRange(0, 30)
+        self.minor_count_spin.setRange(0, 500)
         self.minor_count_spin.setValue(10)
         self.minor_count_spin.setSuffix(" 个")
         character_layout.addRow("龙套数量:", self.minor_count_spin)
@@ -205,6 +205,49 @@ class OutlineTab(QWidget):
         # 创建右侧面板
         right_panel = QWidget()
         right_layout = QVBoxLayout(right_panel)
+
+        # 创建生成范围控制组
+        range_group = QGroupBox("生成范围")
+        range_layout = QHBoxLayout()
+
+        # 起始卷号
+        start_volume_layout = QHBoxLayout()
+        start_volume_layout.addWidget(QLabel("起始卷:"))
+        self.start_volume_spin = QSpinBox()
+        self.start_volume_spin.setRange(1, 999)
+        self.start_volume_spin.setValue(1)
+        start_volume_layout.addWidget(self.start_volume_spin)
+        range_layout.addLayout(start_volume_layout)
+
+        # 起始章节
+        start_chapter_layout = QHBoxLayout()
+        start_chapter_layout.addWidget(QLabel("起始章:"))
+        self.start_chapter_spin = QSpinBox()
+        self.start_chapter_spin.setRange(1, 999)
+        self.start_chapter_spin.setValue(1)
+        start_chapter_layout.addWidget(self.start_chapter_spin)
+        range_layout.addLayout(start_chapter_layout)
+
+        # 结束卷号
+        end_volume_layout = QHBoxLayout()
+        end_volume_layout.addWidget(QLabel("结束卷:"))
+        self.end_volume_spin = QSpinBox()
+        self.end_volume_spin.setRange(1, 999)
+        self.end_volume_spin.setValue(1)
+        end_volume_layout.addWidget(self.end_volume_spin)
+        range_layout.addLayout(end_volume_layout)
+
+        # 结束章节
+        end_chapter_layout = QHBoxLayout()
+        end_chapter_layout.addWidget(QLabel("结束章:"))
+        self.end_chapter_spin = QSpinBox()
+        self.end_chapter_spin.setRange(1, 999)
+        self.end_chapter_spin.setValue(10)
+        end_chapter_layout.addWidget(self.end_chapter_spin)
+        range_layout.addLayout(end_chapter_layout)
+
+        range_group.setLayout(range_layout)
+        right_layout.addWidget(range_group)
 
         # 创建输出区域
         output_group = QGroupBox("生成结果")
@@ -304,6 +347,22 @@ class OutlineTab(QWidget):
             "synopsis": self.synopsis_edit.toPlainText().strip()
         }
 
+        # 获取生成范围
+        start_volume = self.start_volume_spin.value()
+        start_chapter = self.start_chapter_spin.value()
+        end_volume = self.end_volume_spin.value()
+        end_chapter = self.end_chapter_spin.value()
+
+        # 如果指定了生成范围，则将生成的内容合并到已有大纲中
+        if start_volume and end_volume:
+            # 获取已有大纲
+            existing_outline = self.main_window.get_outline()
+            if existing_outline:
+                # 将生成的卷和章节合并到已有大纲中
+                self._merge_volumes(existing_outline, result, start_volume, start_chapter, end_volume, end_chapter)
+                # 使用合并后的大纲
+                result = existing_outline
+
         # 设置大纲
         self.main_window.set_outline(result)
 
@@ -330,6 +389,151 @@ class OutlineTab(QWidget):
 
         # 显示错误消息
         QMessageBox.warning(self, "生成失败", f"生成大纲时出错: {error_message}")
+
+    def _merge_volumes(self, existing_outline, new_outline, start_volume, start_chapter, end_volume, end_chapter):
+        """将新生成的卷和章节合并到已有大纲中
+
+        Args:
+            existing_outline: 已有的大纲
+            new_outline: 新生成的大纲
+            start_volume: 起始卷号（从1开始）
+            start_chapter: 起始章节号（从1开始）
+            end_volume: 结束卷号（从1开始）
+            end_chapter: 结束章节号（从1开始）
+        """
+        # 确保已有大纲中有volumes字段
+        if 'volumes' not in existing_outline:
+            existing_outline['volumes'] = []
+
+        # 如果新大纲中没有volumes字段，直接返回
+        if 'volumes' not in new_outline or not new_outline['volumes']:
+            return
+
+        # 遍历新生成的卷
+        for new_volume in new_outline['volumes']:
+            # 提取卷号（从标题中提取数字）
+            volume_title = new_volume.get('title', '')
+            volume_number = 0
+
+            # 尝试从标题中提取卷号
+            import re
+            match = re.search(r'第(\d+)卷', volume_title)
+            if match:
+                volume_number = int(match.group(1))
+
+            # 如果卷号在指定范围内
+            if start_volume <= volume_number <= end_volume:
+                # 检查已有大纲中是否已有该卷
+                existing_volume_index = None
+                for i, vol in enumerate(existing_outline['volumes']):
+                    vol_title = vol.get('title', '')
+                    match = re.search(r'第(\d+)卷', vol_title)
+                    if match and int(match.group(1)) == volume_number:
+                        existing_volume_index = i
+                        break
+
+                # 如果已有该卷，替换或合并章节
+                if existing_volume_index is not None:
+                    # 保留卷标题和简介
+                    existing_outline['volumes'][existing_volume_index]['title'] = new_volume.get('title', existing_outline['volumes'][existing_volume_index]['title'])
+                    existing_outline['volumes'][existing_volume_index]['description'] = new_volume.get('description', existing_outline['volumes'][existing_volume_index]['description'])
+
+                    # 确保章节列表存在
+                    if 'chapters' not in existing_outline['volumes'][existing_volume_index]:
+                        existing_outline['volumes'][existing_volume_index]['chapters'] = []
+
+                    # 如果有新章节
+                    if 'chapters' in new_volume and new_volume['chapters']:
+                        # 遍历新章节
+                        for new_chapter in new_volume['chapters']:
+                            # 提取章节号
+                            chapter_title = new_chapter.get('title', '')
+                            chapter_number = 0
+
+                            match = re.search(r'第(\d+)章', chapter_title)
+                            if match:
+                                chapter_number = int(match.group(1))
+
+                            # 判断章节是否在范围内
+                            in_range = True
+                            if volume_number == start_volume and start_chapter and chapter_number < start_chapter:
+                                in_range = False
+                            if volume_number == end_volume and end_chapter and chapter_number > end_chapter:
+                                in_range = False
+
+                            if in_range:
+                                # 检查是否已有该章节
+                                existing_chapter_index = None
+                                for j, chap in enumerate(existing_outline['volumes'][existing_volume_index]['chapters']):
+                                    chap_title = chap.get('title', '')
+                                    match = re.search(r'第(\d+)章', chap_title)
+                                    if match and int(match.group(1)) == chapter_number:
+                                        existing_chapter_index = j
+                                        break
+
+                                # 如果已有该章节，替换
+                                if existing_chapter_index is not None:
+                                    existing_outline['volumes'][existing_volume_index]['chapters'][existing_chapter_index] = new_chapter
+                                else:
+                                    # 如果没有，添加到适当位置
+                                    # 找到插入位置
+                                    insert_index = 0
+                                    for j, chap in enumerate(existing_outline['volumes'][existing_volume_index]['chapters']):
+                                        chap_title = chap.get('title', '')
+                                        match = re.search(r'第(\d+)章', chap_title)
+                                        if match and int(match.group(1)) < chapter_number:
+                                            insert_index = j + 1
+
+                                    # 插入新章节
+                                    existing_outline['volumes'][existing_volume_index]['chapters'].insert(insert_index, new_chapter)
+                else:
+                    # 如果没有该卷，添加到适当位置
+                    # 找到插入位置
+                    insert_index = 0
+                    for i, vol in enumerate(existing_outline['volumes']):
+                        vol_title = vol.get('title', '')
+                        match = re.search(r'第(\d+)卷', vol_title)
+                        if match and int(match.group(1)) < volume_number:
+                            insert_index = i + 1
+
+                    # 插入新卷
+                    existing_outline['volumes'].insert(insert_index, new_volume)
+
+        # 最终排序卷和章节，确保顺序正确
+        if 'volumes' in existing_outline and existing_outline['volumes']:
+            # 对卷进行排序
+            def get_volume_number(volume):
+                title = volume.get('title', '')
+                match = re.search(r'第(\d+)卷', title)
+                if match:
+                    return int(match.group(1))
+                return 0
+
+            existing_outline['volumes'].sort(key=get_volume_number)
+
+            # 对每个卷的章节进行排序
+            for volume in existing_outline['volumes']:
+                if 'chapters' in volume and volume['chapters']:
+                    def get_chapter_number(chapter):
+                        title = chapter.get('title', '')
+                        match = re.search(r'第(\d+)章', title)
+                        if match:
+                            return int(match.group(1))
+                        return 0
+
+                    volume['chapters'].sort(key=get_chapter_number)
+
+        # 更新其他字段（如果有新内容）
+        if 'title' in new_outline and new_outline['title'] and not existing_outline.get('title'):
+            existing_outline['title'] = new_outline['title']
+        if 'theme' in new_outline and new_outline['theme'] and not existing_outline.get('theme'):
+            existing_outline['theme'] = new_outline['theme']
+        if 'synopsis' in new_outline and new_outline['synopsis'] and not existing_outline.get('synopsis'):
+            existing_outline['synopsis'] = new_outline['synopsis']
+        if 'worldbuilding' in new_outline and new_outline['worldbuilding'] and not existing_outline.get('worldbuilding'):
+            existing_outline['worldbuilding'] = new_outline['worldbuilding']
+        if 'characters' in new_outline and new_outline['characters'] and not existing_outline.get('characters'):
+            existing_outline['characters'] = new_outline['characters']
 
     def generate_outline(self):
         """生成大纲"""
@@ -386,10 +590,19 @@ class OutlineTab(QWidget):
                 # 记录使用模板
                 self.main_window.status_bar_manager.show_message(f"正在使用模板 '{template_name}' 生成大纲...")
 
+        # 获取生成范围
+        start_volume = self.start_volume_spin.value()
+        start_chapter = self.start_chapter_spin.value()
+        end_volume = self.end_volume_spin.value()
+        end_chapter = self.end_chapter_spin.value()
+
+        # 获取已有大纲（如果有）
+        existing_outline = self.main_window.get_outline()
+
         # 创建并启动生成线程
         self.generation_thread = GenerationThread(
             self.outline_generator.generate_outline,
-            (title, genre, theme, style, synopsis, volume_count, chapters_per_volume, words_per_chapter, protagonist_count, important_count, supporting_count, minor_count),
+            (title, genre, theme, style, synopsis, volume_count, chapters_per_volume, words_per_chapter, protagonist_count, important_count, supporting_count, minor_count, start_volume, start_chapter, end_volume, end_chapter, existing_outline),
             {"callback": self._stream_callback}
         )
 
@@ -478,6 +691,8 @@ class OutlineTab(QWidget):
 配角数量：[用户设置的配角数量] 个
 龙套数量：[用户设置的龙套数量] 个
 
+生成范围：从第[起始卷]卷第[起始章]章 到 第[结束卷]卷第[结束章]章
+
 请生成以下内容：
 1. 小说标题
 2. 核心主题
@@ -489,6 +704,7 @@ class OutlineTab(QWidget):
 特别要求：
 1. 卷标题必须包含卷号，如"第一卷：卷标题"
 2. 章节标题必须包含章节号，如"第一章：章节标题"
+3. 只生成指定范围内的卷和章节，但保持与已有大纲的一致性
 
 请确保大纲结构完整、逻辑合理，并以JSON格式返回。"""
         content_edit.setPlainText(default_content)
@@ -648,6 +864,12 @@ class OutlineTab(QWidget):
         supporting_count = self.supporting_count_spin.value()
         minor_count = self.minor_count_spin.value()
 
+        # 获取生成范围
+        start_volume = self.start_volume_spin.value()
+        start_chapter = self.start_chapter_spin.value()
+        end_volume = self.end_volume_spin.value()
+        end_chapter = self.end_chapter_spin.value()
+
         # 创建模板内容
         template_content = f"""请为我创建一部小说的详细大纲，具体要求如下：
 
@@ -667,6 +889,8 @@ class OutlineTab(QWidget):
 配角数量：{supporting_count} 个
 龙套数量：{minor_count} 个
 
+生成范围：从第{start_volume}卷第{start_chapter}章 到 第{end_volume}卷第{end_chapter}章
+
 请生成以下内容：
 1. 小说标题
 2. 核心主题
@@ -678,6 +902,7 @@ class OutlineTab(QWidget):
 特别要求：
 1. 卷标题必须包含卷号，如"第一卷：卷标题"
 2. 章节标题必须包含章节号，如"第一章：章节标题"
+3. 只生成指定范围内的卷和章节，但保持与已有大纲的一致性
 
 请确保大纲结构完整、逻辑合理，并以JSON格式返回。"""
 
