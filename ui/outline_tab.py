@@ -52,7 +52,7 @@ class OutlineTab(QWidget):
 
         self.model_combo = QComboBox()
         # 只添加标准模型，不显示具体的自定义模型
-        self.model_combo.addItems(["GPT", "Claude", "Gemini", "自定义OpenAI", "ModelScope"])
+        self.model_combo.addItems(["GPT", "Claude", "Gemini", "自定义OpenAI", "ModelScope", "Ollama"])
 
         model_layout.addRow("AI模型:", self.model_combo)
 
@@ -308,6 +308,8 @@ class OutlineTab(QWidget):
             return "custom_openai"
         elif model_text == "modelscope":
             return "modelscope"
+        elif model_text == "ollama":
+            return "ollama"
         else:
             return "gpt"  # 默认使用GPT
 

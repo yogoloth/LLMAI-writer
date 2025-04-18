@@ -175,7 +175,7 @@ class CharacterTab(QWidget):
         ai_button_layout.addWidget(self.generate_button)
 
         self.model_combo = QComboBox()
-        self.model_combo.addItems(["GPT", "Claude", "Gemini", "自定义OpenAI", "ModelScope"])
+        self.model_combo.addItems(["GPT", "Claude", "Gemini", "自定义OpenAI", "ModelScope", "Ollama"])
         ai_button_layout.addWidget(self.model_combo)
 
         character_layout.addLayout(ai_button_layout)
@@ -472,6 +472,8 @@ class CharacterTab(QWidget):
             model_type = "custom_openai"
         elif model_text == "modelscope":
             model_type = "modelscope"
+        elif model_text == "ollama":
+            model_type = "ollama"
         else:
             model_type = "gpt"  # 默认使用GPT
 

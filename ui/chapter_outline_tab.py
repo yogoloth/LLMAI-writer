@@ -744,7 +744,7 @@ class ChapterOutlineTab(QWidget):
     def _get_available_models(self):
         """获取可用的模型列表"""
         # 只返回标准模型，不显示具体的自定义模型
-        return ["GPT", "Claude", "Gemini", "自定义OpenAI", "ModelScope"]
+        return ["GPT", "Claude", "Gemini", "自定义OpenAI", "ModelScope", "Ollama"]
 
     def update_outline(self):
         """更新大纲（供外部调用）"""

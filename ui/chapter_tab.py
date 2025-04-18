@@ -391,7 +391,7 @@ class ChapterTab(QWidget):
             "AI生成章节内容",
             "章节内容",
             current_text,
-            models=["GPT", "Claude", "Gemini", "自定义OpenAI", "ModelScope"],
+            models=["GPT", "Claude", "Gemini", "自定义OpenAI", "ModelScope", "Ollama"],
             default_model="GPT",
             outline_info=outline_info,
             context_info=context_info,
