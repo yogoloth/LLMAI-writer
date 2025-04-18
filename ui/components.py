@@ -124,6 +124,18 @@ class AIGenerateDialog(QDialog):
                 if self.context_info.get("chapter_number"):
                     default_prompt += f"当前章节序号：第{self.context_info.get('chapter_number')}章\n"
 
+                # 添加章节出场角色信息
+                chapter_characters = self.context_info.get("chapter_characters", [])
+                if chapter_characters:
+                    default_prompt += "\n本章出场角色：\n"
+                    for character in chapter_characters:
+                        name = character.get("name", "未命名角色")
+                        identity = character.get("identity", "")
+                        personality = character.get("personality", "")
+                        background = character.get("background", "")
+                        default_prompt += f"- {name}：{identity}\n  性格：{personality}\n  背景：{background}\n"
+                    default_prompt += "\n"
+
                 # 添加当前章节摘要（如果有）
                 current_summary = self.current_text.strip()
                 if current_summary:
@@ -162,6 +174,19 @@ class AIGenerateDialog(QDialog):
                     default_prompt += f"章节标题：{self.context_info.get('chapter_title')}\n"
                 if self.context_info.get("chapter_number"):
                     default_prompt += f"当前章节序号：第{self.context_info.get('chapter_number')}章\n"
+
+                # 添加章节出场角色信息
+                chapter_characters = self.context_info.get("chapter_characters", [])
+                if chapter_characters:
+                    default_prompt += "\n本章出场角色：\n"
+                    for character in chapter_characters:
+                        name = character.get("name", "未命名角色")
+                        identity = character.get("identity", "")
+                        personality = character.get("personality", "")
+                        background = character.get("background", "")
+                        default_prompt += f"- {name}：{identity}\n  性格：{personality}\n  背景：{background}\n"
+                    default_prompt += "\n"
+
                 default_prompt += "\n"
 
                 # 添加前10章的标题和摘要

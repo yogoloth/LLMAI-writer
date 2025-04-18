@@ -175,6 +175,11 @@ class ChapterOutlineTab(QWidget):
         chapter_summary_button_layout = QHBoxLayout()
         chapter_summary_button_layout.addStretch()
 
+        # 添加选择角色按钮
+        self.chapter_summary_select_characters_button = QPushButton("选择角色")
+        self.chapter_summary_select_characters_button.clicked.connect(lambda: self._select_characters_for_summary())
+        chapter_summary_button_layout.addWidget(self.chapter_summary_select_characters_button)
+
         self.chapter_summary_ai_button = QPushButton("AI生成")
         self.chapter_summary_ai_button.clicked.connect(lambda: self._generate_with_ai("章节摘要", self.chapter_summary_edit.toPlainText(), self.chapter_summary_edit.setPlainText))
         chapter_summary_button_layout.addWidget(self.chapter_summary_ai_button)
@@ -609,6 +614,48 @@ class ChapterOutlineTab(QWidget):
         if show_message:
             QMessageBox.information(self, "保存成功", "大纲修改已保存")
 
+    def _select_characters_for_summary(self):
+        """为章节摘要选择出场角色"""
+        if not self.outline or "characters" not in self.outline or not self.outline["characters"]:
+            QMessageBox.warning(self, "提示", "当前小说没有角色数据，请先在人物编辑标签页添加角色。")
+            return
+
+        # 获取当前章节的已选角色（如果有）
+        selected_characters = []
+        if self.current_volume_index >= 0 and self.current_chapter_index >= 0:
+            volumes = self.outline.get("volumes", [])
+            if self.current_volume_index < len(volumes):
+                volume = volumes[self.current_volume_index]
+                chapters = volume.get("chapters", [])
+                if self.current_chapter_index < len(chapters):
+                    chapter = chapters[self.current_chapter_index]
+                    selected_characters = chapter.get("characters", [])
+
+        # 获取所有角色
+        all_characters = self.outline["characters"]
+
+        # 创建角色选择对话框
+        from ui.character_selector_dialog import CharacterSelectorDialog
+        dialog = CharacterSelectorDialog(self, all_characters, selected_characters)
+
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            # 获取选中的角色
+            selected_characters = dialog.get_selected_characters()
+
+            # 保存选中的角色到当前章节
+            if self.current_volume_index >= 0 and self.current_chapter_index >= 0:
+                volumes = self.outline.get("volumes", [])
+                if self.current_volume_index < len(volumes):
+                    volume = volumes[self.current_volume_index]
+                    chapters = volume.get("chapters", [])
+                    if self.current_chapter_index < len(chapters):
+                        chapter = chapters[self.current_chapter_index]
+                        chapter["characters"] = selected_characters
+
+                        # 自动保存
+                        self._save_outline(show_message=False)
+                        self.main_window.status_bar_manager.show_message(f"已为章节设置{len(selected_characters)}个出场角色")
+
     def _generate_with_ai(self, field_name, current_text, set_func):
         """使用AI生成内容"""
         # 获取总大纲信息
@@ -644,6 +691,11 @@ class ChapterOutlineTab(QWidget):
                     chapter = chapters[self.current_chapter_index]
                     context_info["chapter_title"] = chapter.get("title", "")
                     context_info["chapter_number"] = self.current_chapter_index + 1
+
+                    # 添加章节出场角色信息
+                    chapter_characters = chapter.get("characters", [])
+                    if chapter_characters:
+                        context_info["chapter_characters"] = chapter_characters
 
                     # 添加前10章的标题和摘要
                     previous_chapters = []
