@@ -17,7 +17,8 @@ LLMAI-writer 是一个功能强大的 AI 辅助小说创作工具，利用最先
 
 ### 🤖 多模型支持
 - **主流 AI 模型**：支持 OpenAI 的 GPT 系列、Anthropic 的 Claude 系列、Google 的 Gemini 系列
-- **开源模型**：支持 ModelScope 的 DeepSeek-R1 模型
+- **开源模型**：支持 ModelScope 的 DeepSeek-R1 模型和 Ollama 本地模型
+- **本地模型**：通过 Ollama 支持在本地运行开源大语言模型（如 Llama、Mistral、Vicuna 等）
 - **自定义 API**：支持任何兼容 OpenAI 协议的 API 服务
 - **流式输出**：所有模型均支持流式输出，实时查看生成过程
 
@@ -129,40 +130,88 @@ python main.py
 
 ### 代理设置
 ```ini
-[Proxy]
+[PROXY]
+host = 127.0.0.1
+port = 10808
 enabled = true/false
-http_proxy = http://127.0.0.1:7890
-https_proxy = http://127.0.0.1:7890
 ```
 
 > **重要提示：** 本项目默认开启10808端口代理。如果出现网络相关问题（如API连接失败、404错误等），请在设置中关闭代理或修改为您自己的代理端口。
 
 ### API 密钥和模型设置
+
+#### OpenAI (GPT) 设置
 ```ini
-[OpenAI]
-api_key = your_openai_api_key
-model_name = gpt-4-turbo
+[API_KEYS]
+gpt_api_key = your_openai_api_key_here
 
-[Claude]
-api_key = your_anthropic_api_key
-model_name = claude-3-opus-20240229
-
-[Gemini]
-api_key = your_google_api_key
-model_name = gemini-1.5-pro
-
-[ModelScope]
-api_key = your_modelscope_api_key
-model_name = deepseek-r1-chat
+[MODELS]
+gpt_model = gpt-4-turbo  # 或 gpt-4o, gpt-3.5-turbo 等
 ```
+
+#### Claude 设置
+```ini
+[API_KEYS]
+claude_api_key = your_anthropic_api_key_here
+
+[MODELS]
+claude_model = claude-3-opus-20240229  # 或 claude-3-sonnet, claude-3-haiku 等
+```
+
+#### Gemini 设置
+```ini
+[API_KEYS]
+gemini_api_key = your_google_api_key_here
+
+[MODELS]
+gemini_model = gemini-2.0-flash  # 或 gemini-2.0-pro, gemini-1.5-pro 等
+```
+
+#### ModelScope 设置
+```ini
+[API_KEYS]
+modelscope_api_key = your_modelscope_token_here
+
+[MODELS]
+modelscope_model = deepseek-ai/DeepSeek-R1
+
+[MODELSCOPE]
+base_url = https://api-inference.modelscope.cn/v1/
+```
+
+#### Ollama 本地模型设置
+```ini
+[MODELS]
+ollama_model = llama3.2  # 或其他已安装的Ollama模型名称
+
+[OLLAMA]
+api_url = http://localhost:11434/api/chat
+```
+
+> **Ollama使用说明：** 要使用Ollama本地模型，您需要先在本地安装[Ollama](https://ollama.com/)，然后使用`ollama pull llama3.2`等命令下载模型。详细说明请参考Ollama官方文档。
 
 ### 自定义 API 设置
 ```ini
-[CustomOpenAI]
-enabled = true/false
-base_url = https://your-custom-openai-compatible-api.com/v1
-api_key = your_custom_api_key
-model_name = your_model_name
+[API_KEYS]
+custom_openai_api_key = your_custom_api_key_here
+
+[MODELS]
+custom_openai_model = your_custom_model_name_here
+
+[CUSTOM_OPENAI]
+api_url = https://your-custom-openai-compatible-api.com/v1/chat/completions
+```
+
+### 多个自定义模型设置
+```ini
+[CUSTOM_OPENAI_MODELS]
+models = [{
+  "name": "example-model",
+  "api_key": "your_custom_model_api_key_here",
+  "model_name": "your_custom_model_name_here",
+  "api_url": "https://your-custom-api-endpoint.com/v1/chat/completions"
+}]
+enabled = true
 ```
 
 ## 🔧 常见问题
@@ -172,7 +221,7 @@ model_name = your_model_name
 #### 安装依赖失败
 如果安装依赖时遇到问题，可以尝试手动安装主要依赖：
 ```bash
-pip install PyQt6 openai anthropic google-genai
+pip install PyQt6 openai anthropic google-genai qasync aiohttp configparser
 ```
 
 注意：如果安装 google-genai 失败，请确保您使用的是 Python 3.9 或更高版本。
@@ -194,6 +243,47 @@ pip install PyQt6 openai anthropic google-genai
 - 尝试重启应用程序
 - 检查是否安装了最新版本的 PyQt6
 - 在不同的操作系统上，界面可能有细微差异
+
+### Ollama 本地模型相关问题
+
+#### 安装和配置 Ollama
+1. 从 [Ollama 官网](https://ollama.com/) 下载并安装 Ollama
+2. 安装完成后，打开命令行终端，运行以下命令下载模型：
+   ```bash
+   ollama pull llama3.2
+   ```
+   您也可以下载其他模型，如 `mistral`、`vicuna` 等
+3. 确保 Ollama 服务正在运行（安装后通常会自动启动）
+4. 在 LLMAI-writer 的设置中配置 Ollama 模型名称和 API 地址
+
+#### Ollama 连接问题
+- 确保 Ollama 服务正在运行，可以在浏览器中访问 `http://localhost:11434` 检查
+- 如果无法连接，尝试重启 Ollama 服务
+- 如果使用非默认端口或远程 Ollama 服务，请在配置文件中相应修改 API URL
+
+#### Ollama 模型生成速度慢
+- Ollama 模型在本地运行，生成速度取决于您的硬件配置（特别是 GPU）
+- 尝试使用更小的模型，如 `llama3.2:8b` 而非完整的 `llama3.2`
+- 如果没有 GPU，生成速度会显著降低
+
+### 生成内容相关问题
+
+#### 大纲生成和人物生成空白问题
+- **不要留空生成**：在生成大纲或人物时，请确保填写必要的基本信息，如小说标题、类型、主题等
+- **提供足够信息**：在生成人物时，提供足够的背景信息和特征描述可以帮助 AI 生成更好的结果
+- **使用提示词模板**：利用内置的提示词模板可以帮助生成更结构化的内容
+- **尝试不同模型**：如果一个模型生成的结果不理想，尝试切换到其他模型
+
+#### 生成内容质量问题
+- **调整提示词**：如果生成的内容质量不理想，尝试调整提示词，提供更具体的指导
+- **使用高级模型**：对于复杂的内容，使用更高级的模型（如 GPT-4、Claude 3 Opus）通常能获得更好的结果
+- **分步生成**：对于复杂的小说，先生成总体大纲，然后逐步细化各部分
+- **人工编辑**：生成后进行人工编辑和调整，结合 AI 和人类创造力通常能获得最佳结果
+
+#### 生成内容一致性问题
+- **使用上下文感知功能**：生成章节时，系统会自动考虑前后章节的内容，保持故事连贯性
+- **设置章节出场角色**：在生成章节前使用“选择角色”功能，指定该章节中需要出场的角色
+- **使用章节分析功能**：利用章节分析功能检查内容一致性，并使用“章节改进”功能进行优化
 
 ### Docker 相关问题
 
