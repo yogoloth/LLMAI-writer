@@ -71,15 +71,15 @@ class OllamaModel(AIModel):
                 async for line in response.content:
                     if not line:
                         continue
-                    
+
                     try:
                         chunk = json.loads(line)
                         if chunk.get("done", False):
                             break
-                        
+
                         content = chunk.get("message", {}).get("content", "")
                         full_response += content
-                        
+
                         if callback:
                             callback(content)
                     except json.JSONDecodeError:
@@ -122,20 +122,21 @@ class OllamaModel(AIModel):
                 async for line in response.content:
                     if not line:
                         continue
-                    
+
                     try:
                         chunk = json.loads(line)
                         if chunk.get("done", False):
                             break
-                        
+
                         content = chunk.get("message", {}).get("content", "")
                         full_response += content
-                        
+
                         if callback:
                             callback(content)
-                        
+
                         yield content
                     except json.JSONDecodeError:
                         print(f"无法解析JSON: {line}")
 
-                return full_response
+                # 异步生成器不能使用带返回值的return语句
+                # 这里只是为了结束生成器
