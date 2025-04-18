@@ -143,6 +143,15 @@ class ChapterAnalysisTab(QWidget):
         right_panel = QWidget()
         right_layout = QVBoxLayout(right_panel)
 
+        # 添加章节改进按钮
+        improve_button_layout = QHBoxLayout()
+        improve_button_layout.addStretch()
+        self.improve_chapter_button = QPushButton("章节改进")
+        self.improve_chapter_button.clicked.connect(self._improve_chapter)
+        self.improve_chapter_button.setEnabled(False)
+        improve_button_layout.addWidget(self.improve_chapter_button)
+        right_layout.addLayout(improve_button_layout)
+
         # 创建分析结果标签页
         self.result_tabs = QTabWidget()
 
@@ -422,6 +431,9 @@ class ChapterAnalysisTab(QWidget):
         # 保存结果
         self.analysis_result = {}
 
+        # 启用章节改进按钮
+        self.improve_chapter_button.setEnabled(True)
+
         # 尝试解析结果中的各个部分
         if analysis_options.get("plot"):
             plot_section = self._extract_section(result, "核心剧情分析", "故事梗概提取", "优缺点分析", "角色标注", "物品标注", "改进建议")
@@ -521,3 +533,150 @@ class ChapterAnalysisTab(QWidget):
         section_content = text[section_start:section_end].strip()
 
         return section_content
+
+    def _improve_chapter(self):
+        """根据分析结果改进章节"""
+        if not self.analysis_result:
+            QMessageBox.warning(self, "改进失败", "请先分析章节")
+            return
+
+        if not self.selected_chapters or len(self.selected_chapters) == 0:
+            QMessageBox.warning(self, "改进失败", "请选择要改进的章节")
+            return
+
+        # 只改进第一个选中的章节
+        chapter_index = self.selected_chapters[0]
+
+        # 获取章节内容
+        volumes = self.outline.get("volumes", [])
+        if self.current_volume_index < 0 or self.current_volume_index >= len(volumes):
+            QMessageBox.warning(self, "改进失败", "无法获取卷信息")
+            return
+
+        volume = volumes[self.current_volume_index]
+        chapters = volume.get("chapters", [])
+        if chapter_index < 0 or chapter_index >= len(chapters):
+            QMessageBox.warning(self, "改进失败", "无法获取章节信息")
+            return
+
+        chapter = chapters[chapter_index]
+        chapter_title = chapter.get("title", f"第{chapter_index+1}章")
+
+        # 获取章节内容
+        chapter_content = self.main_window.get_chapter(self.current_volume_index, chapter_index)
+        if not chapter_content:
+            QMessageBox.warning(self, "改进失败", "选中的章节没有内容")
+            return
+
+        # 获取总大纲信息
+        outline_info = {}
+        if self.outline:
+            outline_info = {
+                "title": self.outline.get("title", ""),
+                "theme": self.outline.get("theme", ""),
+                "synopsis": self.outline.get("synopsis", ""),
+                "worldbuilding": self.outline.get("worldbuilding", "")
+            }
+
+        # 获取上下文信息
+        context_info = {}
+        context_info["volume_title"] = volume.get("title", "")
+        context_info["volume_description"] = volume.get("description", "")
+        context_info["chapter_title"] = chapter_title
+        context_info["chapter_number"] = chapter_index + 1
+
+        # 添加章节出场角色信息
+        chapter_characters = chapter.get("characters", [])
+        if chapter_characters:
+            context_info["chapter_characters"] = chapter_characters
+
+        # 添加前10章的标题和摘要
+        previous_chapters = []
+        start_idx = max(0, chapter_index - 10)
+        for i in range(start_idx, chapter_index):
+            if i < len(chapters):
+                prev_chapter = chapters[i]
+                previous_chapters.append({
+                    "title": prev_chapter.get("title", ""),
+                    "summary": prev_chapter.get("summary", "")
+                })
+        context_info["previous_chapters"] = previous_chapters
+
+        # 添加前一章的内容
+        if chapter_index > 0:
+            prev_chapter_index = chapter_index - 1
+            prev_chapter_content = self.main_window.get_chapter(self.current_volume_index, prev_chapter_index)
+            if prev_chapter_content:
+                context_info["previous_chapter_content"] = prev_chapter_content
+
+        # 添加后3章的标题和摘要
+        next_chapters = []
+        end_idx = min(len(chapters), chapter_index + 4)
+        for i in range(chapter_index + 1, end_idx):
+            if i < len(chapters):
+                next_chapter = chapters[i]
+                next_chapters.append({
+                    "title": next_chapter.get("title", ""),
+                    "summary": next_chapter.get("summary", "")
+                })
+        context_info["next_chapters"] = next_chapters
+
+        # 添加分析结果
+        analysis_text = ""
+
+        # 添加改进建议
+        if "improvement" in self.analysis_result and self.analysis_result["improvement"]:
+            analysis_text += "\n\n## 改进建议\n" + self.analysis_result["improvement"]
+
+        # 添加优缺点分析
+        if "pros_cons" in self.analysis_result and self.analysis_result["pros_cons"]:
+            analysis_text += "\n\n## 优缺点分析\n" + self.analysis_result["pros_cons"]
+
+        # 构建提示词
+        prompt = f"""请根据以下原始章节内容和分析结果，对章节进行改进和润色。
+
+小说标题：{outline_info.get('title', '')}
+核心主题：{outline_info.get('theme', '')}
+故事梦概：{outline_info.get('synopsis', '')}
+世界观设定：{outline_info.get('worldbuilding', '')}
+
+当前章节：{chapter_title}
+
+## 原始章节内容
+{chapter_content}
+
+## 分析结果{analysis_text}
+
+请根据以上分析和建议，对原始章节进行改进和润色，生成一个新的版本。请特别注意：
+
+1. 保持原有的故事情节和主要剧情点
+2. 根据分析中的改进建议和优缺点分析进行润色
+3. 提高描写的质量和细节
+4. 增强人物形象和对话的生动性
+5. 优化文章结构和节奏
+6. 保持与小说整体风格和主题的一致性
+
+请直接返回改进后的完整章节内容，不要包含其他解释或说明。"""
+
+        # 创建生成对话框
+        dialog = AIGenerateDialog(
+            self,
+            f"改进章节：{chapter_title}",
+            "章节内容",
+            prompt,
+            models=self._get_available_models(),
+            default_model=self.model_combo.currentText(),
+            outline_info=outline_info,
+            context_info=context_info,
+            prompt_manager=self.main_window.prompt_manager
+        )
+
+        # 显示对话框
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            result = dialog.get_result()
+            if result:
+                # 保存改进后的章节
+                self.main_window.set_chapter(self.current_volume_index, chapter_index, result)
+                # 显示成功消息
+                self.main_window.status_bar_manager.show_message(f"章节 '{chapter_title}' 已成功改进并保存")
+                QMessageBox.information(self, "改进成功", f"章节 '{chapter_title}' 已成功改进并保存")
