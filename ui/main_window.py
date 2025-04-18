@@ -17,6 +17,7 @@ from models.claude_model import ClaudeModel
 from models.gemini_model import GeminiModel
 from models.custom_openai_model import CustomOpenAIModel
 from models.modelscope_model import ModelScopeModel
+from models.ollama_model import OllamaModel
 
 from ui.components import ThemeManager, StatusBarManager, KeyboardShortcutManager
 from ui.outline_tab import OutlineTab
@@ -183,8 +184,17 @@ class MainWindow(QMainWindow):
             except Exception as e:
                 print(f"ModelScope模型初始化失败: {e}")
 
+        # 初始化Ollama API
+        self.has_ollama = False
+        if self.config_manager.is_ollama_enabled():
+            try:
+                self.ollama_model = OllamaModel(self.config_manager)
+                self.has_ollama = True
+            except Exception as e:
+                print(f"Ollama模型初始化失败: {e}")
+
         # 检查是否至少有一个模型可用
-        if not any([self.has_gpt, self.has_claude, self.has_gemini, self.has_custom_openai, self.has_modelscope, bool(self.custom_openai_models)]):
+        if not any([self.has_gpt, self.has_claude, self.has_gemini, self.has_custom_openai, self.has_modelscope, self.has_ollama, bool(self.custom_openai_models)]):
             QMessageBox.warning(
                 self,
                 "模型初始化失败",
@@ -208,6 +218,8 @@ class MainWindow(QMainWindow):
             return self.custom_openai_model
         elif model_type == "modelscope" and self.has_modelscope:
             return self.modelscope_model
+        elif model_type == "ollama" and self.has_ollama:
+            return self.ollama_model
         else:
             # 返回第一个可用的模型
             if self.has_gpt:
@@ -220,6 +232,8 @@ class MainWindow(QMainWindow):
                 return self.custom_openai_model
             elif self.has_modelscope:
                 return self.modelscope_model
+            elif self.has_ollama:
+                return self.ollama_model
             elif self.custom_openai_models:
                 # 返回第一个自定义模型
                 return list(self.custom_openai_models.values())[0]

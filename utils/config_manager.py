@@ -34,7 +34,8 @@ class ConfigManager:
             'claude_model': 'claude-3-opus-20240229',
             'gemini_model': 'gemini-2.0-flash',
             'custom_openai_model': 'your_custom_model_name_here',
-            'modelscope_model': 'deepseek-ai/DeepSeek-R1'
+            'modelscope_model': 'deepseek-ai/DeepSeek-R1',
+            'ollama_model': 'llama3.2'
         }
 
         self.config['CUSTOM_OPENAI'] = {
@@ -51,6 +52,11 @@ class ConfigManager:
         self.config['MODELSCOPE'] = {
             # 不需要enabled设置，始终启用
             'base_url': 'https://api-inference.modelscope.cn/v1/'
+        }
+
+        self.config['OLLAMA'] = {
+            # 不需要enabled设置，始终启用
+            'api_url': 'http://localhost:11434/api/chat'
         }
 
         with open(self.config_path, 'w', encoding='utf-8') as f:
@@ -113,6 +119,11 @@ class ConfigManager:
     def is_modelscope_enabled(self):
         """检查ModelScope API是否启用"""
         # ModelScope API始终启用
+        return True
+
+    def is_ollama_enabled(self):
+        """检查Ollama API是否启用"""
+        # Ollama API始终启用
         return True
 
     def is_custom_openai_models_enabled(self):

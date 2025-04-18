@@ -91,12 +91,27 @@ class SettingsTab(QWidget):
         self.modelscope_model = QLineEdit()
         model_layout.addRow("ModelScope模型:", self.modelscope_model)
 
+        # 添加Ollama模型
+        self.ollama_model = QLineEdit()
+        model_layout.addRow("Ollama模型:", self.ollama_model)
+
         model_group.setLayout(model_layout)
         main_layout.addWidget(model_group)
 
         # 创建自定义OpenAI API设置组
         custom_openai_group = QGroupBox("自定义OpenAI兼容API设置")
         custom_openai_layout = QFormLayout()
+
+        # 添加Ollama API设置组
+        ollama_group = QGroupBox("Ollama本地模型设置")
+        ollama_layout = QFormLayout()
+
+        self.ollama_url = QLineEdit()
+        self.ollama_url.setPlaceholderText("http://localhost:11434/api/chat")
+        ollama_layout.addRow("API地址:", self.ollama_url)
+
+        ollama_group.setLayout(ollama_layout)
+        main_layout.addWidget(ollama_group)
 
         # 移除启用复选框，默认启用自定义OpenAI兼容API
 
@@ -198,6 +213,7 @@ class SettingsTab(QWidget):
             self.gemini_model.setText(model_config.get("gemini_model", "gemini-2.0-flash"))
             # self.custom_openai_model已移至自定义OpenAI兼容API设置组
             self.modelscope_model.setText(model_config.get("modelscope_model", "deepseek-ai/DeepSeek-R1"))
+            self.ollama_model.setText(model_config.get("ollama_model", "llama3.2"))
 
         # 加载自定义OpenAI API设置
         if "CUSTOM_OPENAI" in config:
@@ -226,6 +242,11 @@ class SettingsTab(QWidget):
         self.delete_model_button.setEnabled(False)
 
         # ModelScope API设置已在代码中配置好，不需要在UI中显示
+
+        # 加载Ollama API设置
+        if "OLLAMA" in config:
+            ollama_config = config["OLLAMA"]
+            self.ollama_url.setText(ollama_config.get("api_url", "http://localhost:11434/api/chat"))
 
     def save_settings(self):
         """保存设置"""
@@ -266,6 +287,7 @@ class SettingsTab(QWidget):
         config["MODELS"]["claude_model"] = self.claude_model.text()
         config["MODELS"]["gemini_model"] = self.gemini_model.text()
         config["MODELS"]["modelscope_model"] = self.modelscope_model.text()
+        config["MODELS"]["ollama_model"] = self.ollama_model.text()
 
         # 不再使用选中的自定义模型来覆盖基本设置
 
@@ -281,6 +303,12 @@ class SettingsTab(QWidget):
         config["MODELS"]["custom_openai_model"] = self.custom_openai_model.text()
 
         # ModelScope API设置已在代码中配置好，不需要在UI中显示
+
+        # 保存Ollama API设置
+        if "OLLAMA" not in config:
+            config["OLLAMA"] = {}
+
+        config["OLLAMA"]["api_url"] = self.ollama_url.text()
 
         # 保存配置
         self.config_manager.save_config()

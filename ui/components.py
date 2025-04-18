@@ -53,7 +53,7 @@ class AIGenerateDialog(QDialog):
         self.current_text = current_text
         self.result_text = ""
         self.generation_thread = None
-        self.models = models or ["GPT", "Claude", "Gemini", "自定义OpenAI", "ModelScope"]
+        self.models = models or ["GPT", "Claude", "Gemini", "自定义OpenAI", "ModelScope", "Ollama"]
         self.default_model = default_model if default_model in self.models else self.models[0]
         self.outline_info = outline_info or {}
         self.context_info = context_info or {}
