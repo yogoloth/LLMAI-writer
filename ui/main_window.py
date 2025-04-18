@@ -8,6 +8,9 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtGui import QFont, QFontDatabase, QIcon, QKeySequence, QAction
 from PyQt6.QtCore import Qt, QSize
 
+from ui.icons import get_new_icon, get_open_icon, get_save_icon, get_stats_icon, get_theme_icon, get_help_icon, get_about_icon
+from ui.app_icon import set_app_icon
+
 from utils.config_manager import ConfigManager
 from utils.data_manager import NovelDataManager
 from utils.prompt_manager import PromptManager
@@ -81,8 +84,8 @@ class MainWindow(QMainWindow):
         if os.path.exists(font_path):
             font_id = QFontDatabase.addApplicationFont(font_path)
             if font_id != -1:
-                font_family = QFontDatabase.applicationFontFamilies(font_id)[0]
-                self.font = QFont(font_family, 10)
+                # 直接使用字体文件名作为字体名
+                self.font = QFont("SourceHanSansCN-Normal", 10)
                 QApplication.setFont(self.font)
             else:
                 print("无法加载字体文件")
@@ -245,46 +248,48 @@ class MainWindow(QMainWindow):
         # 创建主工具栏
         toolbar = QToolBar("Main Toolbar")
         toolbar.setIconSize(QSize(24, 24))
+        toolbar.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)  # 显示图标和文本
         self.addToolBar(toolbar)
 
         # 文件操作
-        new_action = QAction("新建", self)
+        new_action = QAction(get_new_icon(), "新建", self)
         new_action.setShortcut(QKeySequence.StandardKey.New)
         new_action.triggered.connect(self.new_novel)
         toolbar.addAction(new_action)
 
-        open_action = QAction("打开", self)
+        open_action = QAction(get_open_icon(), "打开", self)
         open_action.setShortcut(QKeySequence.StandardKey.Open)
         open_action.triggered.connect(self.load_novel)
         toolbar.addAction(open_action)
 
-        save_action = QAction("保存", self)
+        save_action = QAction(get_save_icon(), "保存", self)
         save_action.setShortcut(QKeySequence.StandardKey.Save)
         save_action.triggered.connect(self.save_novel)
+        save_action.setProperty("primary", True)  # 设置为主要按钮
         toolbar.addAction(save_action)
 
         toolbar.addSeparator()
 
         # 统计
-        stats_action = QAction("统计信息", self)
+        stats_action = QAction(get_stats_icon(), "统计信息", self)
         stats_action.setShortcut(QKeySequence("Ctrl+I"))
         stats_action.triggered.connect(self.show_statistics)
         toolbar.addAction(stats_action)
 
         # 主题切换
-        theme_action = QAction("切换主题", self)
+        theme_action = QAction(get_theme_icon(), "切换主题", self)
         theme_action.setShortcut(QKeySequence("Ctrl+T"))
         theme_action.triggered.connect(self.toggle_theme)
         toolbar.addAction(theme_action)
 
         # 帮助
-        help_action = QAction("帮助", self)
+        help_action = QAction(get_help_icon(), "帮助", self)
         help_action.setShortcut(QKeySequence.StandardKey.HelpContents)
         help_action.triggered.connect(self.show_help)
         toolbar.addAction(help_action)
 
         # 关于
-        about_action = QAction("关于", self)
+        about_action = QAction(get_about_icon(), "关于", self)
         about_action.triggered.connect(self.show_about)
         toolbar.addAction(about_action)
 
@@ -584,6 +589,13 @@ def run_app():
 
     # 设置应用程序样式
     app.setStyle("Fusion")
+
+    # 应用默认样式表
+    from ui.styles import get_style
+    app.setStyleSheet(get_style("light"))
+
+    # 设置应用程序图标
+    set_app_icon(app)
 
     # 创建主窗口
     window = MainWindow()

@@ -17,7 +17,7 @@ from PyQt6.QtGui import QFont
 import os
 
 import matplotlib
-matplotlib.rcParams['font.family'] = ['Source Han Sans CN', 'sans-serif']
+matplotlib.rcParams['font.family'] = ['SourceHanSansCN-Normal', 'Source Han Sans CN']
 from matplotlib import font_manager as fm
 # 添加字体文件
 font_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "SourceHanSansCN-Normal.otf")
@@ -53,8 +53,8 @@ class StatisticsTab(QWidget):
         # 加载思源黑体
         font_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "SourceHanSansCN-Normal.otf")
         if os.path.exists(font_path):
-            font_id = QFont("Source Han Sans CN").family()
-            if font_id == "Source Han Sans CN":
+            font_id = QFont("SourceHanSansCN-Normal").family()
+            if font_id == "SourceHanSansCN-Normal":
                 # 已经加载了字体
                 pass
             else:
@@ -68,7 +68,7 @@ class StatisticsTab(QWidget):
         main_layout = QVBoxLayout(self)
 
         # 设置字体
-        font = QFont("Source Han Sans CN")
+        font = QFont("SourceHanSansCN-Normal")
         self.setFont(font)
 
         # 创建标签页
@@ -279,25 +279,25 @@ class StatisticsTab(QWidget):
         # 设置字体
         for label in (ax1.get_xticklabels() + ax1.get_yticklabels() +
                       ax2.get_xticklabels() + ax2.get_yticklabels()):
-            label.set_fontproperties('Source Han Sans CN')
+            label.set_fontproperties('SourceHanSansCN-Normal')
 
         # 卷字数统计图
         volume_indices = [stat["volume_index"]+1 for stat in volume_stats]
         volume_words = [stat["word_count"] for stat in volume_stats]
 
         ax1.bar(volume_indices, volume_words)
-        ax1.set_title("各卷字数统计", fontproperties='Source Han Sans CN')
-        ax1.set_xlabel("卷号", fontproperties='Source Han Sans CN')
-        ax1.set_ylabel("字数", fontproperties='Source Han Sans CN')
+        ax1.set_title("各卷字数统计", fontproperties='SourceHanSansCN-Normal')
+        ax1.set_xlabel("卷号", fontproperties='SourceHanSansCN-Normal')
+        ax1.set_ylabel("字数", fontproperties='SourceHanSansCN-Normal')
         ax1.set_xticks(volume_indices)
 
         # 章节字数分布图
         chapter_words = [stat["word_count"] for stat in chapter_stats if stat["word_count"] > 0]
         if chapter_words:
             ax2.hist(chapter_words, bins=10)
-            ax2.set_title("章节字数分布", fontproperties='Source Han Sans CN')
-            ax2.set_xlabel("字数", fontproperties='Source Han Sans CN')
-            ax2.set_ylabel("章节数", fontproperties='Source Han Sans CN')
+            ax2.set_title("章节字数分布", fontproperties='SourceHanSansCN-Normal')
+            ax2.set_xlabel("字数", fontproperties='SourceHanSansCN-Normal')
+            ax2.set_ylabel("章节数", fontproperties='SourceHanSansCN-Normal')
 
         self.figure.tight_layout()
         self.canvas.draw()

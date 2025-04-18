@@ -85,6 +85,7 @@ class ChapterTab(QWidget):
         # 生成章节按钮已移除，使用AI辅助编辑按钮替代
 
         self.save_button = QPushButton("保存章节")
+        self.save_button.setProperty("primary", True)  # 设置为主要按钮
         self.save_button.clicked.connect(self.save_chapter)
         self.save_button.setEnabled(False)
         button_layout.addWidget(self.save_button)
@@ -128,6 +129,7 @@ class ChapterTab(QWidget):
         ai_button_layout.addWidget(self.select_characters_button)
 
         self.ai_generate_button = QPushButton("AI辅助编辑")
+        self.ai_generate_button.setProperty("primary", True)  # 设置为主要按钮
         self.ai_generate_button.clicked.connect(self._generate_with_ai)
         self.ai_generate_button.setEnabled(False)
         ai_button_layout.addWidget(self.ai_generate_button)

@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
     QPushButton, QGroupBox, QFormLayout, QCheckBox,
     QMessageBox, QSpinBox, QComboBox, QDoubleSpinBox,
-    QInputDialog, QDialog
+    QInputDialog, QDialog, QScrollArea
 )
 from PyQt6.QtCore import Qt
 
@@ -26,7 +26,16 @@ class SettingsTab(QWidget):
     def _init_ui(self):
         """初始化UI"""
         # 创建主布局
-        main_layout = QVBoxLayout(self)
+        outer_layout = QVBoxLayout(self)
+
+        # 创建滚动区域
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setFrameShape(QScrollArea.Shape.NoFrame)  # 移除边框
+
+        # 创建内容widget
+        content_widget = QWidget()
+        main_layout = QVBoxLayout(content_widget)
 
         # 创建代理设置组
         proxy_group = QGroupBox("代理设置")
@@ -70,6 +79,7 @@ class SettingsTab(QWidget):
         api_layout.addRow("ModelScope Token:", self.modelscope_api_key)
 
         api_group.setLayout(api_layout)
+
         main_layout.addWidget(api_group)
 
         # 创建模型设置组
@@ -96,22 +106,12 @@ class SettingsTab(QWidget):
         model_layout.addRow("Ollama模型:", self.ollama_model)
 
         model_group.setLayout(model_layout)
+
         main_layout.addWidget(model_group)
 
         # 创建自定义OpenAI API设置组
         custom_openai_group = QGroupBox("自定义OpenAI兼容API设置")
         custom_openai_layout = QFormLayout()
-
-        # 添加Ollama API设置组
-        ollama_group = QGroupBox("Ollama本地模型设置")
-        ollama_layout = QFormLayout()
-
-        self.ollama_url = QLineEdit()
-        self.ollama_url.setPlaceholderText("http://localhost:11434/api/chat")
-        ollama_layout.addRow("API地址:", self.ollama_url)
-
-        ollama_group.setLayout(ollama_layout)
-        main_layout.addWidget(ollama_group)
 
         # 移除启用复选框，默认启用自定义OpenAI兼容API
 
@@ -128,7 +128,20 @@ class SettingsTab(QWidget):
         custom_openai_layout.addRow("API地址:", self.custom_openai_url)
 
         custom_openai_group.setLayout(custom_openai_layout)
+
         main_layout.addWidget(custom_openai_group)
+
+        # 添加Ollama API设置组
+        ollama_group = QGroupBox("Ollama本地模型设置")
+        ollama_layout = QFormLayout()
+
+        self.ollama_url = QLineEdit()
+        self.ollama_url.setPlaceholderText("http://localhost:11434/api/chat")
+        ollama_layout.addRow("API地址:", self.ollama_url)
+
+        ollama_group.setLayout(ollama_layout)
+
+        main_layout.addWidget(ollama_group)
 
         # 创建自定义模型管理组
         custom_models_group = QGroupBox("自定义模型管理")
@@ -184,6 +197,12 @@ class SettingsTab(QWidget):
 
         # 添加弹性空间
         main_layout.addStretch()
+
+        # 设置滚动区域的内容
+        scroll_area.setWidget(content_widget)
+
+        # 添加滚动区域到外层布局
+        outer_layout.addWidget(scroll_area)
 
     def _load_config(self):
         """加载配置"""

@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
     QTextEdit, QPushButton, QComboBox, QGroupBox, QFormLayout,
     QSpinBox, QDoubleSpinBox, QMessageBox, QSplitter, QFileDialog, QProgressBar,
-    QDialog, QInputDialog
+    QDialog, QInputDialog, QScrollArea
 )
 from PyQt6.QtCore import Qt, pyqtSignal, pyqtSlot
 
@@ -146,7 +146,17 @@ class OutlineTab(QWidget):
 
         # 创建角色设置组
         character_group = QGroupBox("角色设置")
-        character_layout = QFormLayout()
+        character_group_layout = QVBoxLayout()
+
+        # 创建滚动区域
+        character_scroll = QScrollArea()
+        character_scroll.setWidgetResizable(True)
+        character_scroll.setFrameShape(QScrollArea.Shape.NoFrame)  # 移除边框
+
+        # 创建内容widget
+        character_content = QWidget()
+        character_layout = QFormLayout(character_content)
+        character_layout.setContentsMargins(0, 0, 0, 0)  # 减少边距
 
         # 添加主角数量设置
         self.protagonist_count_spin = QSpinBox()
@@ -176,7 +186,16 @@ class OutlineTab(QWidget):
         self.minor_count_spin.setSuffix(" 个")
         character_layout.addRow("龙套数量:", self.minor_count_spin)
 
-        character_group.setLayout(character_layout)
+        # 设置滚动区域的内容
+        character_scroll.setWidget(character_content)
+
+        # 添加滚动区域到角色设置组
+        character_group_layout.addWidget(character_scroll)
+        character_group.setLayout(character_group_layout)
+
+        # 设置最小高度，确保至少显示两个选项
+        character_group.setMinimumHeight(100)
+
         info_layout.addRow(character_group)
 
         info_group.setLayout(info_layout)
@@ -187,6 +206,7 @@ class OutlineTab(QWidget):
         button_layout = QVBoxLayout()
 
         self.generate_button = QPushButton("生成大纲")
+        self.generate_button.setProperty("primary", True)  # 设置为主要按钮
         self.generate_button.clicked.connect(self.generate_outline)
         button_layout.addWidget(self.generate_button)
 

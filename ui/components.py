@@ -21,6 +21,7 @@ from PyQt6.QtCore import Qt, pyqtSignal, pyqtSlot, QSize, QTimer, QPoint
 from PyQt6.QtGui import QIcon, QKeySequence, QShortcut, QFont, QColor, QPalette, QAction
 
 from utils.async_utils import GenerationThread, ProgressIndicator, AsyncHelper
+from ui.styles import get_style
 
 
 class AIGenerateDialog(QDialog):
@@ -816,8 +817,13 @@ class ThemeManager:
     def _set_light_theme(self):
         """设置明亮主题"""
         self.app.setStyle("Fusion")
+
+        # 使用默认调色板
         palette = QPalette()
         self.app.setPalette(palette)
+
+        # 应用明亮主题样式表
+        self.app.setStyleSheet(get_style("light"))
 
     def _set_dark_theme(self):
         """设置深色主题"""
@@ -841,6 +847,9 @@ class ThemeManager:
 
         # 设置调色板
         self.app.setPalette(palette)
+
+        # 应用深色主题样式表
+        self.app.setStyleSheet(get_style("dark"))
 
 
 class StatusBarManager:
