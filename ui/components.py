@@ -32,32 +32,40 @@ class AIGenerateDialog(QDialog):
     """
 
     def __init__(self, parent=None, title="AI生成", field_name="内容", current_text="",
-                 models=None, default_model="GPT", outline_info=None, context_info=None, prompt_manager=None):
+                 models=None, default_model="GPT", outline_info=None, context_info=None, prompt_manager=None,
+                 task_type="generate", selected_text=None, full_text=None): # 添加新参数
         """
         初始化AI生成对话框
 
         Args:
             parent: 父窗口
             title: 对话框标题
-            field_name: 字段名称
-            current_text: 当前文本
+            field_name: 字段名称 (例如 "章节内容", "章节摘要")
+            current_text: 当前文本 (用于生成任务的上下文或基础)
             models: 可用的模型列表
             default_model: 默认选择的模型
-            outline_info: 总大纲信息，包含标题、中心思想、故事梦概和世界观设定
-            context_info: 上下文信息，如卷标题、卷简介、章节标题等
+            outline_info: 总大纲信息
+            context_info: 上下文信息
             prompt_manager: 提示词管理器实例
+            task_type: 任务类型 ('generate' 或 'polish')
+            selected_text: 用户选定的文本 (用于润色任务)
+            full_text: 完整的章节文本 (用于润色任务的上下文)
         """
         super().__init__(parent)
         self.setWindowTitle(title)
         self.resize(600, 500)
         self.field_name = field_name
-        self.current_text = current_text
+        self.current_text = current_text # 对于润色任务，这个可能为空
         self.result_text = ""
         self.generation_thread = None
-        self.models = models or ["GPT", "Claude", "Gemini", "自定义OpenAI", "ModelScope", "Ollama"]
+        self.models = models or ["GPT", "Claude", "Gemini", "自定义OpenAI", "ModelScope", "Ollama", "SiliconFlow"] # 保持模型列表更新
         self.default_model = default_model if default_model in self.models else self.models[0]
         self.outline_info = outline_info or {}
         self.context_info = context_info or {}
+        # 保存新参数
+        self.task_type = task_type
+        self.selected_text = selected_text
+        self.full_text = full_text
 
         # 获取提示词管理器
         if prompt_manager:
@@ -93,15 +101,61 @@ class AIGenerateDialog(QDialog):
 
         self.prompt_edit = QTextEdit()
 
-        # 构建默认提示词
-        default_prompt = f"请根据以下内容，生成一个新的{self.field_name}：\n\n"
+        # 构建默认提示词 - 根据任务类型区分
+        default_prompt = ""
+        if self.task_type == "polish":
+            # 构建润色任务的提示词
+            default_prompt = f"""请根据以下上下文信息和要求，润色指定的文本段落。
 
-        # 添加总大纲信息（如果有）
-        if self.outline_info:
-            if self.outline_info.get("title"):
-                default_prompt += f"小说标题：{self.outline_info.get('title')}\n"
-            if self.outline_info.get("theme"):
-                default_prompt += f"中心思想：{self.outline_info.get('theme')}\n"
+**任务要求:**
+1.  **重点润色**以下被 `[润色目标开始]` 和 `[润色目标结束]` 标记的文本段落。
+2.  润色目标是使其语言更**生动、流畅、精炼**（或根据需要调整目标）。
+3.  保持原文的核心意思和情节不变。
+4.  确保润色后的文本与上下文**自然衔接**，风格保持一致。
+5.  **只返回**润色后的目标文本段落本身，不要包含标记符或原文的其他部分。
+
+**小说信息:**
+"""
+            # 添加总大纲信息
+            if self.outline_info: # 确保 outline_info 存在
+                # 使用明确的4空格缩进重写此块
+                if self.outline_info.get("title"):
+                    default_prompt += f"- 小说标题：{self.outline_info.get('title')}\n"
+                if self.outline_info.get("theme"):
+                    default_prompt += f"- 中心思想：{self.outline_info.get('theme')}\n"
+                if self.outline_info.get("synopsis"):
+                    default_prompt += f"- 故事梗概：{self.outline_info.get('synopsis')}\n"
+                if self.outline_info.get("worldbuilding"):
+                    default_prompt += f"- 世界观设定：{self.outline_info.get('worldbuilding')}\n"
+            # 确保此行与 if self.outline_info: 对齐
+            default_prompt += "\n**章节上下文:**\n"
+            # 添加章节上下文
+            if self.context_info: # 确保 context_info 存在
+                 if self.context_info.get("chapter_title"): default_prompt += f"- 当前章节：{self.context_info.get('chapter_title')}\n"
+                 # 可以考虑添加前后章节摘要等 context_info 中的其他信息
+
+            default_prompt += f"""
+**完整章节内容 (包含需要润色的部分):**
+---
+{self.full_text if self.full_text else '(缺少完整章节内容)'}
+---
+
+**需要润色的文本段落:**
+[润色目标开始]
+{self.selected_text if self.selected_text else '(缺少选定文本)'}
+[润色目标结束]
+
+请开始润色，只输出润色后的目标段落："""
+
+        else:
+            # 保持原来的生成任务提示词逻辑
+            default_prompt = f"请根据以下内容，生成一个新的{self.field_name}：\n\n"
+            # 添加总大纲信息（如果有）
+            if self.outline_info:
+                if self.outline_info.get("title"): # 确保 outline_info 存在，并使用明确的4空格缩进重写此块
+                    default_prompt += f"小说标题：{self.outline_info.get('title')}\n"
+                if self.outline_info.get("theme"): # 确保 outline_info 存在，并使用明确的4空格缩进重写此块
+                    default_prompt += f"中心思想：{self.outline_info.get('theme')}\n"
             if self.outline_info.get("synopsis"):
                 default_prompt += f"故事梦概：{self.outline_info.get('synopsis')}\n"
             if self.outline_info.get("worldbuilding"):
