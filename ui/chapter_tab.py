@@ -43,13 +43,10 @@ class ChapterTab(QWidget):
         model_layout = QFormLayout()
 
         self.model_combo = QComboBox()
-        # 添加标准模型
-        self.model_combo.addItems(["GPT", "Claude", "Gemini", "自定义OpenAI", "ModelScope"])
-
-        # 添加自定义模型
-        if hasattr(self.main_window, 'custom_openai_models') and self.main_window.custom_openai_models:
-            for model_name in self.main_window.custom_openai_models.keys():
-                self.model_combo.addItem(model_name)
+        # 添加标准模型到硬编码列表
+        self.model_combo.addItems(["GPT", "Claude", "Gemini", "自定义OpenAI", "ModelScope", "Ollama", "SiliconFlow"])
+        # 注意：这里不再动态添加多个自定义模型到主下拉框，保持和其他标签页一致
+        # 用户可以通过AI辅助编辑对话框选择多个自定义模型
 
         model_layout.addRow("AI模型:", self.model_combo)
 
@@ -232,8 +229,23 @@ class ChapterTab(QWidget):
             return "custom_openai"
         elif model_text == "modelscope":
             return "modelscope"
+        elif model_text == "ollama":
+             return "ollama"
+        elif model_text == "siliconflow": # 添加 SiliconFlow 处理
+             return "siliconflow"
+        elif model_text in self.main_window.custom_openai_models: # 处理多个自定义模型
+             return model_text # 直接返回模型名称作为类型
         else:
-            return "gpt"  # 默认使用GPT
+            # 如果列表为空或选中的不在已知类型中，尝试返回第一个可用的
+            if self.main_window.has_gpt: return "gpt"
+            if self.main_window.has_claude: return "claude"
+            if self.main_window.has_gemini: return "gemini"
+            if self.main_window.has_custom_openai: return "custom_openai"
+            if self.main_window.has_modelscope: return "modelscope"
+            if self.main_window.has_ollama: return "ollama"
+            if self.main_window.has_siliconflow: return "siliconflow"
+            if self.main_window.custom_openai_models: return list(self.main_window.custom_openai_models.keys())[0]
+            raise ValueError("没有可用的AI模型") # 如果真的一个都没有
 
     def _stream_callback(self, chunk):
         """流式生成回调函数"""
@@ -393,7 +405,8 @@ class ChapterTab(QWidget):
             "AI生成章节内容",
             "章节内容",
             current_text,
-            models=["GPT", "Claude", "Gemini", "自定义OpenAI", "ModelScope", "Ollama"],
+            # 添加 SiliconFlow 到硬编码列表
+            models=["GPT", "Claude", "Gemini", "自定义OpenAI", "ModelScope", "Ollama", "SiliconFlow"],
             default_model="GPT",
             outline_info=outline_info,
             context_info=context_info,

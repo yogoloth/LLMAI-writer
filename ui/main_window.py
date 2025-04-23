@@ -21,6 +21,7 @@ from models.gemini_model import GeminiModel
 from models.custom_openai_model import CustomOpenAIModel
 from models.modelscope_model import ModelScopeModel
 from models.ollama_model import OllamaModel
+from models.siliconflow_model import SiliconFlowModel # 导入 SiliconFlow 模型
 
 from ui.components import ThemeManager, StatusBarManager, KeyboardShortcutManager
 from ui.outline_tab import OutlineTab
@@ -39,7 +40,7 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         # 设置窗口标题和大小
-        self.setWindowTitle("AI小说生成器")
+        self.setWindowTitle("AI小说生成器 v0.80")
         self.resize(1200, 800)
 
         # 加载配置
@@ -196,8 +197,18 @@ class MainWindow(QMainWindow):
             except Exception as e:
                 print(f"Ollama模型初始化失败: {e}")
 
+        # 初始化 SiliconFlow API
+        self.has_siliconflow = False
+        # 检查配置中是否有 siliconflow_api_key 来决定是否启用
+        if self.config_manager.get_api_key('siliconflow'):
+            try:
+                self.siliconflow_model = SiliconFlowModel(self.config_manager)
+                self.has_siliconflow = True
+            except Exception as e:
+                print(f"SiliconFlow模型初始化失败: {e}")
+
         # 检查是否至少有一个模型可用
-        if not any([self.has_gpt, self.has_claude, self.has_gemini, self.has_custom_openai, self.has_modelscope, self.has_ollama, bool(self.custom_openai_models)]):
+        if not any([self.has_gpt, self.has_claude, self.has_gemini, self.has_custom_openai, self.has_modelscope, self.has_ollama, self.has_siliconflow, bool(self.custom_openai_models)]):
             QMessageBox.warning(
                 self,
                 "模型初始化失败",
@@ -223,25 +234,15 @@ class MainWindow(QMainWindow):
             return self.modelscope_model
         elif model_type == "ollama" and self.has_ollama:
             return self.ollama_model
-        else:
-            # 返回第一个可用的模型
-            if self.has_gpt:
-                return self.gpt_model
-            elif self.has_claude:
-                return self.claude_model
-            elif self.has_gemini:
-                return self.gemini_model
-            elif self.has_custom_openai:
-                return self.custom_openai_model
-            elif self.has_modelscope:
-                return self.modelscope_model
-            elif self.has_ollama:
-                return self.ollama_model
-            elif self.custom_openai_models:
-                # 返回第一个自定义模型
-                return list(self.custom_openai_models.values())[0]
+        elif model_type == "siliconflow":
+            if self.has_siliconflow:
+                return self.siliconflow_model
             else:
-                raise ValueError("没有可用的AI模型")
+                # 如果请求了 SiliconFlow 但它不可用（通常是缺少API Key），则明确报错
+                raise ValueError("SiliconFlow模型未配置或初始化失败 (请检查config.ini中的API Key)")
+        else:
+            # 如果模型类型字符串本身就不认识
+             raise ValueError(f"未知的模型类型: {model_type}")
 
     def _create_toolbar(self):
         """创建工具栏"""

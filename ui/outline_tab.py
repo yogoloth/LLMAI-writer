@@ -52,7 +52,7 @@ class OutlineTab(QWidget):
 
         self.model_combo = QComboBox()
         # 只添加标准模型，不显示具体的自定义模型
-        self.model_combo.addItems(["GPT", "Claude", "Gemini", "自定义OpenAI", "ModelScope", "Ollama"])
+        self.model_combo.addItems(["GPT", "Claude", "Gemini", "自定义OpenAI", "ModelScope", "Ollama", "SiliconFlow"]) # 直接添加到硬编码列表
 
         model_layout.addRow("AI模型:", self.model_combo)
 
@@ -330,8 +330,10 @@ class OutlineTab(QWidget):
             return "modelscope"
         elif model_text == "ollama":
             return "ollama"
+        elif model_text == "siliconflow": # 添加 SiliconFlow 处理
+            return "siliconflow"
         else:
-            return "gpt"  # 默认使用GPT
+            return "gpt"  # 默认使用GPT # 保持原来的默认逻辑
 
     def _update_buttons(self, has_outline):
         """更新按钮状态"""

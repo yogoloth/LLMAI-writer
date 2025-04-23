@@ -650,8 +650,12 @@ class AIGenerateDialog(QDialog):
             model_type = "custom_openai"
         elif model_text == "modelscope":
             model_type = "modelscope"
+        elif model_text == "ollama": # 添加对Ollama的判断
+            model_type = "ollama"
         else:
-            model_type = "gpt"  # 默认使用GPT
+            # 如果下拉框里出现了这里没有处理的选项，显示错误
+            QMessageBox.warning(self, "错误", f"无法识别的模型类型: {self.model_combo.currentText()}")
+            return # 不继续执行生成
         try:
             # 尝试不同的方式获取main_window
             if hasattr(self.parent(), 'main_window'):

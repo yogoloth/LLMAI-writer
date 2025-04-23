@@ -76,7 +76,12 @@ class SettingsTab(QWidget):
         # 添加ModelScope API密钥
         self.modelscope_api_key = QLineEdit()
         self.modelscope_api_key.setEchoMode(QLineEdit.EchoMode.Password)
-        api_layout.addRow("ModelScope Token:", self.modelscope_api_key)
+        api_layout.addRow("ModelScope API密钥:", self.modelscope_api_key)
+
+        # 添加 SiliconFlow API密钥
+        self.siliconflow_api_key = QLineEdit()
+        self.siliconflow_api_key.setEchoMode(QLineEdit.EchoMode.Password)
+        api_layout.addRow("SiliconFlow API密钥:", self.siliconflow_api_key)
 
         api_group.setLayout(api_layout)
 
@@ -104,6 +109,10 @@ class SettingsTab(QWidget):
         # 添加Ollama模型
         self.ollama_model = QLineEdit()
         model_layout.addRow("Ollama模型:", self.ollama_model)
+
+        # 添加 SiliconFlow 模型
+        self.siliconflow_model = QLineEdit()
+        model_layout.addRow("SiliconFlow模型:", self.siliconflow_model)
 
         model_group.setLayout(model_layout)
 
@@ -223,6 +232,7 @@ class SettingsTab(QWidget):
             self.gemini_api_key.setText(api_config.get("gemini_api_key", ""))
             self.custom_openai_api_key.setText(api_config.get("custom_openai_api_key", ""))
             self.modelscope_api_key.setText(api_config.get("modelscope_api_key", ""))
+            self.siliconflow_api_key.setText(api_config.get("siliconflow_api_key", "")) # 加载 SiliconFlow API Key
 
         # 加载模型设置
         if "MODELS" in config:
@@ -233,6 +243,7 @@ class SettingsTab(QWidget):
             # self.custom_openai_model已移至自定义OpenAI兼容API设置组
             self.modelscope_model.setText(model_config.get("modelscope_model", "deepseek-ai/DeepSeek-R1"))
             self.ollama_model.setText(model_config.get("ollama_model", "llama3.2"))
+            self.siliconflow_model.setText(model_config.get("siliconflow_model", "deepseek-ai/DeepSeek-R1")) # 加载 SiliconFlow 模型
 
         # 加载自定义OpenAI API设置
         if "CUSTOM_OPENAI" in config:
@@ -287,6 +298,7 @@ class SettingsTab(QWidget):
         config["API_KEYS"]["claude_api_key"] = self.claude_api_key.text()
         config["API_KEYS"]["gemini_api_key"] = self.gemini_api_key.text()
         config["API_KEYS"]["modelscope_api_key"] = self.modelscope_api_key.text()
+        config["API_KEYS"]["siliconflow_api_key"] = self.siliconflow_api_key.text() # 保存 SiliconFlow API Key
 
         # 如果选中了自定义模型，则使用选中模型的API密钥
         if self.custom_model_combo.currentIndex() > 0:
@@ -307,6 +319,7 @@ class SettingsTab(QWidget):
         config["MODELS"]["gemini_model"] = self.gemini_model.text()
         config["MODELS"]["modelscope_model"] = self.modelscope_model.text()
         config["MODELS"]["ollama_model"] = self.ollama_model.text()
+        config["MODELS"]["siliconflow_model"] = self.siliconflow_model.text() # 保存 SiliconFlow 模型
 
         # 不再使用选中的自定义模型来覆盖基本设置
 
