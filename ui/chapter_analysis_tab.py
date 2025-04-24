@@ -316,7 +316,8 @@ class ChapterAnalysisTab(QWidget):
         # 获取模型类型
         model_type = self.model_combo.currentText()
         try:
-            model = self.main_window.get_model(model_type)
+            # 将模型类型转换为小写以匹配 get_model 函数的预期
+            model = self.main_window.get_model(model_type.lower())
         except ValueError as e:
             QMessageBox.warning(self, "模型错误", str(e))
             return

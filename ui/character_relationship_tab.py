@@ -53,6 +53,13 @@ class CharacterRelationshipTab(QWidget):
         self.delete_relation_button.clicked.connect(self.delete_relationship)
         controls_layout.addWidget(self.delete_relation_button)
 
+        # 添加手动保存按钮
+        self.save_relationships_button = QPushButton("保存关系(暂存)")
+        self.save_relationships_button.setToolTip("将当前关系数据暂存到内存，最终需点击主工具栏保存按钮写入文件")
+        self.save_relationships_button.clicked.connect(self.save_relationships_and_notify) # 连接新的带通知的方法
+        controls_layout.addWidget(self.save_relationships_button)
+
+
         controls_layout.addSpacerItem(QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum))
 
         main_layout.addWidget(controls_widget)
@@ -160,10 +167,24 @@ class CharacterRelationshipTab(QWidget):
                     elif isinstance(k, list) and len(k) == 2:
                          # 尝试解析 ["角色A", "角色B"] 格式
                          loaded_relationships[tuple(sorted(k))] = v
+                    elif isinstance(k, str) and '|' in k:
+                         # 尝试解析 "角色A|角色B" 格式 (由 save_relationships_to_data 保存的格式)
+                         parts = k.split('|', 1) # 只分割一次
+                         if len(parts) == 2:
+                             char1, char2 = parts
+                             # 确保名字不为空
+                             if char1 and char2:
+                                 loaded_relationships[tuple(sorted((char1, char2)))] = v
+                                 # print(f"人物关系图：成功解析竖线分隔键: {k}") # Debug (可选)
+                             else:
+                                 print(f"人物关系图：竖线分隔键包含空角色名: {k}") # Debug
+                         else:
+                             print(f"人物关系图：无法正确分割竖线分隔的字符串键: {k}") # Debug
                     elif isinstance(k, tuple) and len(k) == 2:
                          # 如果已经是元组了 (不太可能从JSON直接得到，除非手动处理过)
                          loaded_relationships[tuple(sorted(k))] = v
                     else:
+                        # 只有在以上所有格式都不匹配时才忽略
                         print(f"人物关系图：忽略无法识别的关系键: {k} (类型: {type(k)})") # Debug
                 except Exception as e:
                     print(f"人物关系图：解析关系键 '{k}' 时出错: {e}") # Debug
@@ -188,6 +209,13 @@ class CharacterRelationshipTab(QWidget):
         self.data_manager.set_relationships(savable_relationships)
         print(f"人物关系图：关系已转换为可保存格式并传递给数据管理器: {savable_relationships}") # Debug
 
+
+    def save_relationships_and_notify(self):
+        """调用保存关系到数据管理器，并显示状态栏消息"""
+        self.save_relationships_to_data()
+        # 尝试访问主窗口的状态栏管理器来显示消息
+        if hasattr(self.main_window, 'status_bar_manager'):
+            self.main_window.status_bar_manager.show_message("人物关系已暂存", 3000) # 显示3秒
 
     def add_or_update_relationship(self):
         """添加或更新选定角色之间的关系"""
@@ -286,24 +314,35 @@ class CharacterRelationshipTab(QWidget):
             # k 控制节点间距离，iterations 控制迭代次数
             pos = nx.spring_layout(G, k=0.5, iterations=50, seed=42) # 使用种子保证布局相对稳定
 
-            # 解决中文显示问题 - 直接使用项目根目录的字体文件
-            font_path = "SourceHanSansCN-Normal.otf"
-            if matplotlib.font_manager.findSystemFonts(fontpaths=[font_path]):
-                 print(f"人物关系图：使用字体文件: {font_path}") # Debug
-                 # 创建字体属性对象
-                 font_prop = matplotlib.font_manager.FontProperties(fname=font_path)
-                 plt.rcParams['axes.unicode_minus'] = False # 解决负号显示问题
+            # 解决中文显示问题 - 获取字体文件的正确路径
+            import os
+            font_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "SourceHanSansCN-Normal.otf")
+            font_prop = None
+            font_name = None
+            if os.path.exists(font_path):
+                 print(f"人物关系图：找到字体文件: {font_path}") # Debug
+                 try:
+                     # 创建字体属性对象
+                     font_prop = matplotlib.font_manager.FontProperties(fname=font_path)
+                     font_name = font_prop.get_name() # 获取字体名称供 networkx 使用
+                     plt.rcParams['axes.unicode_minus'] = False # 解决负号显示问题
+                     print(f"人物关系图：使用字体: {font_name}") # Debug
+                 except Exception as font_e:
+                     print(f"人物关系图：加载字体文件 {font_path} 时出错: {font_e}") # Debug
+                     font_prop = None
+                     font_name = None
             else:
-                 print(f"人物关系图：警告：未找到字体文件 {font_path}，标签可能显示不正确。") # Debug
+                 print(f"人物关系图：警告：未找到字体文件 {font_path}，标签可能使用默认字体。") # Debug
                  font_prop = None # 使用默认字体
+                 font_name = None
                  plt.rcParams['axes.unicode_minus'] = False # 仍然设置这个
 
             # 绘制图形
             nx.draw_networkx_nodes(G, pos, ax=self.ax, node_size=2000, node_color='skyblue', alpha=0.9)
             nx.draw_networkx_edges(G, pos, ax=self.ax, width=1.0, alpha=0.5, edge_color='gray')
-            # 使用 fontproperties 参数指定字体
-            nx.draw_networkx_labels(G, pos, ax=self.ax, font_size=10, fontproperties=font_prop)
-            nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, ax=self.ax, font_size=8, font_color='red', fontproperties=font_prop)
+            # 使用 font_family 参数指定字体名称
+            nx.draw_networkx_labels(G, pos, ax=self.ax, font_size=10, font_family=font_name)
+            nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, ax=self.ax, font_size=8, font_color='red', font_family=font_name)
 
             self.figure.tight_layout() # 调整布局防止标签重叠
             self.canvas.draw() # 刷新画布

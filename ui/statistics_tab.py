@@ -42,6 +42,7 @@ class StatisticsTab(QWidget):
         super().__init__()
         self.main_window = main_window
         self.data_manager = main_window.data_manager
+        self.font_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "SourceHanSansCN-Normal.otf")
 
         # 设置字体
         self._set_font()
@@ -278,7 +279,8 @@ class StatisticsTab(QWidget):
         ax2 = self.figure.add_subplot(122)
 
         # 创建字体属性对象
-        font_prop = fm.FontProperties(family='Source Han Sans CN')
+        # Use the direct path to the font file stored in self.font_path
+        font_prop = fm.FontProperties(fname=self.font_path)
 
         # 设置字体
         for label in (ax1.get_xticklabels() + ax1.get_yticklabels() +
