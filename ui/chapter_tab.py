@@ -40,22 +40,7 @@ class ChapterTab(QWidget):
         left_panel = QWidget()
         left_layout = QVBoxLayout(left_panel)
 
-        # 创建模型选择组
-        model_group = QGroupBox("模型选择")
-        model_layout = QFormLayout()
-
-        self.model_combo = QComboBox()
-        # 添加标准模型到硬编码列表
-        self.model_combo.addItems(["GPT", "Claude", "Gemini", "自定义OpenAI", "ModelScope", "Ollama", "SiliconFlow"])
-        # 注意：这里不再动态添加多个自定义模型到主下拉框，保持和其他标签页一致
-        # 用户可以通过AI辅助编辑对话框选择多个自定义模型
-
-        model_layout.addRow("AI模型:", self.model_combo)
-
-        model_group.setLayout(model_layout)
-        left_layout.addWidget(model_group)
-
-        # 创建卷选择组
+        # 创建卷选择组 (删除了之前的模型选择组)
         volume_group = QGroupBox("卷选择")
         volume_layout = QVBoxLayout()
 
@@ -451,7 +436,7 @@ class ChapterTab(QWidget):
             current_text,
             # 添加 SiliconFlow 到硬编码列表
             models=["GPT", "Claude", "Gemini", "自定义OpenAI", "ModelScope", "Ollama", "SiliconFlow"],
-            default_model="GPT",
+            # default_model="GPT", # 不再需要传递默认模型，让对话框自己处理
             outline_info=outline_info,
             context_info=context_info,
             prompt_manager=self.main_window.prompt_manager,
@@ -546,7 +531,7 @@ class ChapterTab(QWidget):
             "润色结果",
             "", # 初始文本为空，因为我们要在prompt里提供上下文
             models=["GPT", "Claude", "Gemini", "自定义OpenAI", "ModelScope", "Ollama", "SiliconFlow"], # 保持模型列表一致
-            default_model="GPT", # 或者可以读取上次使用的模型
+            # default_model="GPT", # 不再需要传递默认模型
             outline_info=outline_info,
             context_info=context_info,
             prompt_manager=self.main_window.prompt_manager,

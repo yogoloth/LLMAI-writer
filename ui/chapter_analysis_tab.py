@@ -47,19 +47,7 @@ class ChapterAnalysisTab(QWidget):
         left_panel = QWidget()
         left_layout = QVBoxLayout(left_panel)
 
-        # 创建模型选择组
-        model_group = QGroupBox("模型选择")
-        model_layout = QFormLayout()
-
-        self.model_combo = QComboBox()
-        # 只添加标准模型，不显示具体的自定义模型
-        self.model_combo.addItems(["GPT", "Claude", "Gemini", "自定义OpenAI", "ModelScope"])
-        model_layout.addRow("AI模型:", self.model_combo)
-
-        model_group.setLayout(model_layout)
-        left_layout.addWidget(model_group)
-
-        # 创建卷选择组
+        # 创建卷选择组 (删除了之前的模型选择组)
         volume_group = QGroupBox("卷选择")
         volume_layout = QVBoxLayout()
 
@@ -313,16 +301,7 @@ class ChapterAnalysisTab(QWidget):
             QMessageBox.warning(self, "分析失败", "选中的章节没有内容")
             return
 
-        # 获取模型类型
-        model_type = self.model_combo.currentText()
-        try:
-            # 将模型类型转换为小写以匹配 get_model 函数的预期
-            model = self.main_window.get_model(model_type.lower())
-        except ValueError as e:
-            QMessageBox.warning(self, "模型错误", str(e))
-            return
-
-        # 获取总大纲信息
+        # 获取总大纲信息 (删除了从 self.model_combo 获取模型类型的代码)
         outline_info = {}
         if self.outline:
             outline_info = {
@@ -352,7 +331,7 @@ class ChapterAnalysisTab(QWidget):
             "分析结果",
             prompt,
             models=self._get_available_models(),
-            default_model=model_type,
+            # default_model=model_type, # 不再需要传递默认模型，让对话框自己处理
             outline_info=outline_info,
             prompt_manager=self.main_window.prompt_manager
         )
@@ -667,7 +646,7 @@ class ChapterAnalysisTab(QWidget):
             "章节内容",
             prompt,
             models=self._get_available_models(),
-            default_model=self.model_combo.currentText(),
+            # default_model=self.model_combo.currentText(), # 不再需要传递默认模型
             outline_info=outline_info,
             context_info=context_info,
             prompt_manager=self.main_window.prompt_manager
