@@ -136,6 +136,14 @@ class OutlineGenerator:
             prompt += ", ".join(character_names)
             prompt += "\n"
 
+        # 特别提醒AI关于角色生成的说明
+        prompt += f"""
+        特别说明：
+        1. 新生成角色数量 {new_character_count} 个仅指需要新创建的角色数量
+        2. 请不要重复创建已有角色，已有角色会在"已选择的出场角色"中列出
+        3. 在生成的JSON中，characters字段只包含新创建的角色，不要包含已有角色
+        """
+
         # 如果指定了生成范围
         if start_volume and end_volume:
             prompt += f"""
@@ -198,6 +206,8 @@ class OutlineGenerator:
         特别要求：
         1. 卷标题必须包含卷号，如"第二卷：卷标题"，卷号必须与实际卷号一致
         2. 章节标题必须包含章节号，如"第三章：章节标题"，章节号必须与实际章节号一致
+        3. 只生成指定数量的新角色，不要重复已有角色
+        4. 在characters字段中只包含新创建的角色，不要包含已有角色
         """
 
         if start_volume and end_volume:

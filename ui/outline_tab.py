@@ -550,7 +550,7 @@ class OutlineTab(QWidget):
         if 'worldbuilding' in new_outline and new_outline['worldbuilding'] and not existing_outline.get('worldbuilding'):
             existing_outline['worldbuilding'] = new_outline['worldbuilding']
 
-        # 合并角色数据
+        # 合并角色数据 - 只添加新生成的角色，不替换已有角色
         if 'characters' in new_outline and new_outline['characters']:
             if not existing_outline.get('characters'):
                 # 如果已有大纲中没有角色数据，直接使用新生成的角色数据
