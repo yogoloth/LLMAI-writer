@@ -14,6 +14,7 @@ from PyQt6.QtCore import Qt, pyqtSignal, pyqtSlot
 from generators.outline_generator import OutlineGenerator
 from utils.async_utils import GenerationThread, ProgressIndicator
 from utils.prompt_manager import PromptManager
+from ui.character_selector_dialog import CharacterSelectorDialog
 
 
 class OutlineTab(QWidget):
@@ -26,6 +27,7 @@ class OutlineTab(QWidget):
         self.outline_generator = None
         self.generation_thread = None
         self.progress_indicator = ProgressIndicator(self)
+        self.selected_characters = []  # 初始化选中的角色列表
 
         # 获取提示词管理器
         self.prompt_manager = self.main_window.prompt_manager
@@ -158,33 +160,24 @@ class OutlineTab(QWidget):
         character_layout = QFormLayout(character_content)
         character_layout.setContentsMargins(0, 0, 0, 0)  # 减少边距
 
-        # 添加主角数量设置
-        self.protagonist_count_spin = QSpinBox()
-        self.protagonist_count_spin.setRange(1, 100)
-        self.protagonist_count_spin.setValue(1)
-        self.protagonist_count_spin.setSuffix(" 个")
-        character_layout.addRow("主角数量:", self.protagonist_count_spin)
+        # 添加新生成角色数量设置
+        self.new_character_count_spin = QSpinBox()
+        self.new_character_count_spin.setRange(0, 100)
+        self.new_character_count_spin.setValue(5)
+        self.new_character_count_spin.setSuffix(" 个")
+        character_layout.addRow("新生成角色数量:", self.new_character_count_spin)
 
-        # 添加重要角色数量设置
-        self.important_count_spin = QSpinBox()
-        self.important_count_spin.setRange(0, 100)
-        self.important_count_spin.setValue(3)
-        self.important_count_spin.setSuffix(" 个")
-        character_layout.addRow("重要角色数量:", self.important_count_spin)
+        # 添加选择当前范围大纲出现角色的按钮
+        self.selected_characters = []  # 存储选中的角色
+        character_select_layout = QHBoxLayout()
+        self.character_select_button = QPushButton("选择角色")
+        self.character_select_button.clicked.connect(self._select_characters)
+        character_select_layout.addWidget(self.character_select_button)
 
-        # 添加配角数量设置
-        self.supporting_count_spin = QSpinBox()
-        self.supporting_count_spin.setRange(0, 200)
-        self.supporting_count_spin.setValue(5)
-        self.supporting_count_spin.setSuffix(" 个")
-        character_layout.addRow("配角数量:", self.supporting_count_spin)
+        self.character_count_label = QLabel("已选择: 0 个角色")
+        character_select_layout.addWidget(self.character_count_label)
 
-        # 添加龙套数量设置
-        self.minor_count_spin = QSpinBox()
-        self.minor_count_spin.setRange(0, 500)
-        self.minor_count_spin.setValue(10)
-        self.minor_count_spin.setSuffix(" 个")
-        character_layout.addRow("龙套数量:", self.minor_count_spin)
+        character_layout.addRow("选择出场角色:", character_select_layout)
 
         # 设置滚动区域的内容
         character_scroll.setWidget(character_content)
@@ -559,6 +552,26 @@ class OutlineTab(QWidget):
         if 'characters' in new_outline and new_outline['characters'] and not existing_outline.get('characters'):
             existing_outline['characters'] = new_outline['characters']
 
+    def _select_characters(self):
+        """选择章节出场角色"""
+        # 获取当前小说的所有角色
+        outline = self.main_window.get_outline()
+        if not outline or "characters" not in outline or not outline["characters"]:
+            QMessageBox.warning(self, "提示", "当前小说没有角色数据，请先在人物编辑标签页添加角色。")
+            return
+
+        # 获取所有角色
+        all_characters = outline["characters"]
+
+        # 创建角色选择对话框
+        dialog = CharacterSelectorDialog(self, all_characters, self.selected_characters)
+
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            # 获取选中的角色
+            self.selected_characters = dialog.get_selected_characters()
+            # 更新已选择角色数量标签
+            self.character_count_label.setText(f"已选择: {len(self.selected_characters)} 个角色")
+
     def generate_outline(self):
         """生成大纲"""
         # 获取输入
@@ -571,11 +584,9 @@ class OutlineTab(QWidget):
         chapters_per_volume = self.chapters_per_volume_spin.value()
         words_per_chapter = self.words_per_chapter_spin.value()
 
-        # 获取角色数量设置
-        protagonist_count = self.protagonist_count_spin.value()
-        important_count = self.important_count_spin.value()
-        supporting_count = self.supporting_count_spin.value()
-        minor_count = self.minor_count_spin.value()
+        # 获取新的角色设置
+        new_character_count = self.new_character_count_spin.value()
+        selected_characters = self.selected_characters
 
         if not theme:
             QMessageBox.warning(self, "输入错误", "请输入小说主题")
@@ -626,7 +637,8 @@ class OutlineTab(QWidget):
         # 创建并启动生成线程
         self.generation_thread = GenerationThread(
             self.outline_generator.generate_outline,
-            (title, genre, theme, style, synopsis, volume_count, chapters_per_volume, words_per_chapter, protagonist_count, important_count, supporting_count, minor_count, start_volume, start_chapter, end_volume, end_chapter, existing_outline),
+            (title, genre, theme, style, synopsis, volume_count, chapters_per_volume, words_per_chapter,
+             new_character_count, selected_characters, start_volume, start_chapter, end_volume, end_chapter, existing_outline),
             {"callback": self._stream_callback}
         )
 
@@ -710,10 +722,8 @@ class OutlineTab(QWidget):
 每章字数：[用户设置的字数] 字
 
 人物设置：
-主角数量：[用户设置的主角数量] 个
-重要角色数量：[用户设置的重要角色数量] 个
-配角数量：[用户设置的配角数量] 个
-龙套数量：[用户设置的龙套数量] 个
+新生成角色数量：[用户设置的新生成角色数量] 个
+已选择出场角色：[用户选择的角色数量] 个
 
 生成范围：从第[起始卷]卷第[起始章]章 到 第[结束卷]卷第[结束章]章
 
@@ -729,6 +739,7 @@ class OutlineTab(QWidget):
 1. 卷标题必须包含卷号，如"第一卷：卷标题"
 2. 章节标题必须包含章节号，如"第一章：章节标题"
 3. 只生成指定范围内的卷和章节，但保持与已有大纲的一致性
+4. 在生成的内容中充分利用已选择的出场角色
 
 请确保大纲结构完整、逻辑合理，并以JSON格式返回。"""
         content_edit.setPlainText(default_content)
@@ -882,11 +893,9 @@ class OutlineTab(QWidget):
         chapters_per_volume = self.chapters_per_volume_spin.value()
         words_per_chapter = self.words_per_chapter_spin.value()
 
-        # 获取角色数量设置
-        protagonist_count = self.protagonist_count_spin.value()
-        important_count = self.important_count_spin.value()
-        supporting_count = self.supporting_count_spin.value()
-        minor_count = self.minor_count_spin.value()
+        # 获取新的角色设置
+        new_character_count = self.new_character_count_spin.value()
+        selected_characters_count = len(self.selected_characters)
 
         # 获取生成范围
         start_volume = self.start_volume_spin.value()
@@ -908,10 +917,8 @@ class OutlineTab(QWidget):
 每章字数：{words_per_chapter} 字
 
 人物设置：
-主角数量：{protagonist_count} 个
-重要角色数量：{important_count} 个
-配角数量：{supporting_count} 个
-龙套数量：{minor_count} 个
+新生成角色数量：{new_character_count} 个
+已选择出场角色：{selected_characters_count} 个
 
 生成范围：从第{start_volume}卷第{start_chapter}章 到 第{end_volume}卷第{end_chapter}章
 
@@ -927,6 +934,7 @@ class OutlineTab(QWidget):
 1. 卷标题必须包含卷号，如"第一卷：卷标题"
 2. 章节标题必须包含章节号，如"第一章：章节标题"
 3. 只生成指定范围内的卷和章节，但保持与已有大纲的一致性
+4. 在生成的内容中充分利用已选择的出场角色
 
 请确保大纲结构完整、逻辑合理，并以JSON格式返回。"""
 

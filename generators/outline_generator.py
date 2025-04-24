@@ -15,7 +15,7 @@ class OutlineGenerator:
         self.ai_model = ai_model
         self.config_manager = config_manager
 
-    async def generate_outline(self, title, genre, theme, style, synopsis, volume_count, chapters_per_volume, words_per_chapter, protagonist_count, important_count, supporting_count, minor_count, start_volume=None, start_chapter=None, end_volume=None, end_chapter=None, existing_outline=None, callback=None):
+    async def generate_outline(self, title, genre, theme, style, synopsis, volume_count, chapters_per_volume, words_per_chapter, new_character_count, selected_characters=None, start_volume=None, start_chapter=None, end_volume=None, end_chapter=None, existing_outline=None, callback=None):
         """
         生成小说大纲
 
@@ -28,10 +28,8 @@ class OutlineGenerator:
             volume_count: 卷数
             chapters_per_volume: 每卷章节数
             words_per_chapter: 每章字数
-            protagonist_count: 主角数量
-            important_count: 重要角色数量
-            supporting_count: 配角数量
-            minor_count: 龙套数量
+            new_character_count: 新生成角色数量
+            selected_characters: 选择的已有角色列表
             start_volume: 起始卷号（从1开始）
             start_chapter: 起始章节号（从1开始）
             end_volume: 结束卷号（从1开始）
@@ -42,7 +40,7 @@ class OutlineGenerator:
         Returns:
             生成的大纲（JSON格式）
         """
-        prompt = self._create_outline_prompt(title, genre, theme, style, synopsis, volume_count, chapters_per_volume, words_per_chapter, protagonist_count, important_count, supporting_count, minor_count, start_volume, start_chapter, end_volume, end_chapter, existing_outline)
+        prompt = self._create_outline_prompt(title, genre, theme, style, synopsis, volume_count, chapters_per_volume, words_per_chapter, new_character_count, selected_characters, start_volume, start_chapter, end_volume, end_chapter, existing_outline)
 
         if callback:
             # 流式生成
@@ -85,7 +83,7 @@ class OutlineGenerator:
             response = await self.ai_model.generate(prompt)
             return self._parse_outline(response)
 
-    def _create_outline_prompt(self, title, genre, theme, style, synopsis, volume_count, chapters_per_volume, words_per_chapter, protagonist_count, important_count, supporting_count, minor_count, start_volume=None, start_chapter=None, end_volume=None, end_chapter=None, existing_outline=None):
+    def _create_outline_prompt(self, title, genre, theme, style, synopsis, volume_count, chapters_per_volume, words_per_chapter, new_character_count, selected_characters=None, start_volume=None, start_chapter=None, end_volume=None, end_chapter=None, existing_outline=None):
         """创建大纲生成的提示词"""
         # 构建提示词基础部分
         if start_volume and end_volume:
@@ -126,11 +124,17 @@ class OutlineGenerator:
         总字数：约 {volume_count * chapters_per_volume * words_per_chapter // 10000} 万字
 
         人物设置：
-        主角数量：{protagonist_count} 个
-        重要角色数量：{important_count} 个
-        配角数量：{supporting_count} 个
-        龙套数量：{minor_count} 个
+        新生成角色数量：{new_character_count} 个
         """
+
+        # 添加选择的角色信息
+        if selected_characters and len(selected_characters) > 0:
+            prompt += f"""
+        已选择的出场角色：
+        """
+            character_names = [char.get("name", "未命名角色") for char in selected_characters]
+            prompt += ", ".join(character_names)
+            prompt += "\n"
 
         # 如果指定了生成范围
         if start_volume and end_volume:
@@ -186,7 +190,7 @@ class OutlineGenerator:
         请生成以下内容：
         1. 小说标题
         2. 核心主题
-        3. 主要人物（包括姓名、身份、性格特点和背景故事）
+        3. 主要人物（包括姓名、身份、年龄、性别、性格特点、背景故事、外貌描述、能力特长和目标动机）
         4. 故事梗概
         5. 分卷结构（每卷包含标题、简介和具体章节）
         6. 世界观设定
@@ -215,8 +219,13 @@ class OutlineGenerator:
                 {{
                     "name": "角色名",
                     "identity": "身份",
-                    "personality": "性格特点",
-                    "background": "背景故事"
+                    "age": "年龄",
+                    "gender": "性别",
+                    "personality": "性格特点（详细描述）",
+                    "background": "背景故事（详细描述）",
+                    "appearance": "外貌描述（详细描述）",
+                    "abilities": "能力特长（详细描述）",
+                    "goals": "目标动机（详细描述）"
                 }}
             ],
             "synopsis": "故事梗概",
