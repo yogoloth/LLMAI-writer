@@ -29,6 +29,7 @@ from ui.outline_edit_tab import OutlineEditTab
 from ui.chapter_outline_tab import ChapterOutlineTab
 from ui.chapter_tab import ChapterTab
 from ui.character_tab import CharacterTab
+from ui.character_relationship_tab import CharacterRelationshipTab 
 from ui.chapter_analysis_tab import ChapterAnalysisTab
 from ui.statistics_tab import StatisticsTab
 from ui.settings_tab import SettingsTab
@@ -119,6 +120,7 @@ class MainWindow(QMainWindow):
         self.chapter_outline_tab = ChapterOutlineTab(self)
         self.chapter_tab = ChapterTab(self)
         self.character_tab = CharacterTab(self)
+        self.character_relationship_tab = CharacterRelationshipTab(self) 
         self.chapter_analysis_tab = ChapterAnalysisTab(self)
         self.statistics_tab = StatisticsTab(self)
         self.settings_tab = SettingsTab(self)
@@ -129,6 +131,7 @@ class MainWindow(QMainWindow):
         self.tab_widget.addTab(self.chapter_outline_tab, "章节大纲编辑")
         self.tab_widget.addTab(self.chapter_tab, "章节生成")
         self.tab_widget.addTab(self.character_tab, "人物编辑")
+        self.tab_widget.addTab(self.character_relationship_tab, "人物关系图") 
         self.tab_widget.addTab(self.chapter_analysis_tab, "章节分析")
         self.tab_widget.addTab(self.statistics_tab, "统计信息")
         self.tab_widget.addTab(self.settings_tab, "设置")
@@ -374,6 +377,8 @@ class MainWindow(QMainWindow):
         self.character_tab.update_characters()
         # 更新章节分析标签页
         self.chapter_analysis_tab.set_outline(outline)
+        # 更新人物关系图标签页 
+        self.character_relationship_tab.set_outline(outline)
         # 更新统计标签页
         self.statistics_tab.update_statistics()
 
@@ -466,6 +471,15 @@ class MainWindow(QMainWindow):
                     self.status_bar_manager.show_message("人物数据已自动保存")
             except Exception as e:
                 print(f"自动保存人物数据时出错: {e}")
+
+        elif current_tab == self.character_relationship_tab: 
+            # 自动保存人物关系数据
+            try:
+                if hasattr(self.character_relationship_tab, 'save_relationships_to_data'):
+                    self.character_relationship_tab.save_relationships_to_data()
+                    self.status_bar_manager.show_message("人物关系数据已自动保存")
+            except Exception as e:
+                print(f"自动保存人物关系数据时出错: {e}")
 
     def save_novel(self):
         """保存小说"""

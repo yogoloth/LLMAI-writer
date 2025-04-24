@@ -8,4 +8,5 @@ configparser
 requests
 tqdm
 qasync
+networkx 
 matplotlib
