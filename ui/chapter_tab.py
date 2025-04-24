@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QTextEdit,
-    QPushButton, QComboBox, QGroupBox, QFormLayout,
+    QPushButton, QComboBox, QGroupBox, QFormLayout, QLineEdit, QLabel,
     QMessageBox, QSplitter, QListWidget, QListWidgetItem,
     QDialog
 )
@@ -21,6 +21,8 @@ class ChapterTab(QWidget):
         self.outline = None
         self.current_volume_index = -1
         self.current_chapter_index = -1
+
+        self.selected_characters_for_chapter = [] # 用于存储当前章节选定的角色
 
         # 初始化UI
         self._init_ui()
@@ -124,11 +126,21 @@ class ChapterTab(QWidget):
         # 添加选择角色按钮
         self.select_characters_button = QPushButton("选择角色")
         self.select_characters_button.clicked.connect(self._select_characters)
-        self.select_characters_button.setEnabled(False)
+        self.select_characters_button.setEnabled(False) # 初始禁用
         ai_button_layout.addWidget(self.select_characters_button)
 
+        # 添加字数输入框和确认按钮
+        ai_button_layout.addWidget(QLabel("目标字数:"))
+        self.word_count_input = QLineEdit()
+        self.word_count_input.setPlaceholderText("选填")
+        self.word_count_input.setFixedWidth(60) # 固定宽度
+        ai_button_layout.addWidget(self.word_count_input)
+        # 确认按钮暂时不需要，直接在生成时读取输入框内容
+        # self.confirm_word_count_button = QPushButton("确认字数")
+        # self.confirm_word_count_button.clicked.connect(self._confirm_word_count) # 需要实现 _confirm_word_count 方法
+        # ai_button_layout.addWidget(self.confirm_word_count_button)
+
         self.ai_generate_button = QPushButton("AI辅助编辑")
-        self.ai_generate_button.setProperty("primary", True)  # 设置为主要按钮
         self.ai_generate_button.clicked.connect(self._generate_with_ai)
         self.ai_generate_button.setEnabled(False)
         ai_button_layout.addWidget(self.ai_generate_button)
@@ -318,38 +330,40 @@ class ChapterTab(QWidget):
             return
 
         # 获取当前章节的已选角色（如果有）
-        selected_characters = []
+        # selected_characters = [] # 不再需要局部变量
         volumes = self.outline.get("volumes", [])
         if self.current_volume_index < len(volumes):
             volume = volumes[self.current_volume_index]
             chapters = volume.get("chapters", [])
             if self.current_chapter_index < len(chapters):
                 chapter = chapters[self.current_chapter_index]
-                selected_characters = chapter.get("characters", [])
+                self.selected_characters_for_chapter = chapter.get("characters", []) # 加载已选角色到成员变量
 
         # 获取所有角色
         all_characters = self.outline["characters"]
 
         # 创建角色选择对话框
         from ui.character_selector_dialog import CharacterSelectorDialog
-        dialog = CharacterSelectorDialog(self, all_characters, selected_characters)
+        # 传入已选角色
+        dialog = CharacterSelectorDialog(self, all_characters, self.selected_characters_for_chapter)
 
         if dialog.exec() == QDialog.DialogCode.Accepted:
             # 获取选中的角色
-            selected_characters = dialog.get_selected_characters()
+            self.selected_characters_for_chapter = dialog.get_selected_characters()
 
-            # 保存选中的角色到当前章节
+            # 保存选中的角色到当前章节的 outline 数据中
             volumes = self.outline.get("volumes", [])
             if self.current_volume_index < len(volumes):
                 volume = volumes[self.current_volume_index]
                 chapters = volume.get("chapters", [])
                 if self.current_chapter_index < len(chapters):
                     chapter = chapters[self.current_chapter_index]
-                    chapter["characters"] = selected_characters
+                    # 将选中的角色名字列表存入 chapter 字典
+                    chapter["characters"] = self.selected_characters_for_chapter
 
                     # 更新大纲
                     self.main_window.set_outline(self.outline)
-                    self.main_window.status_bar_manager.show_message(f"已为章节设置{len(selected_characters)}个出场角色")
+                    self.main_window.status_bar_manager.show_message(f"已为章节设置{len(self.selected_characters_for_chapter)}个出场角色")
 
     def _generate_with_ai(self):
         """使用AI生成内容"""
@@ -381,10 +395,10 @@ class ChapterTab(QWidget):
                 context_info["chapter_title"] = chapter.get("title", "")
                 context_info["chapter_number"] = self.current_chapter_index + 1
 
-                # 添加章节出场角色信息
-                chapter_characters = chapter.get("characters", [])
-                if chapter_characters:
-                    context_info["chapter_characters"] = chapter_characters
+                # 添加章节出场角色信息 (使用 self.selected_characters_for_chapter)
+                # chapter_characters = chapter.get("characters", []) # 从 outline 获取
+                if self.selected_characters_for_chapter:
+                    context_info["chapter_characters"] = self.selected_characters_for_chapter
 
                 # 添加前10章的标题和摘要
                 previous_chapters = []
@@ -421,6 +435,15 @@ class ChapterTab(QWidget):
         current_text = self.output_edit.toPlainText()
         chapter_info = self.info_edit.toPlainText()
 
+        # 获取目标字数
+        target_word_count_str = self.word_count_input.text().strip()
+        target_word_count = None
+        if target_word_count_str.isdigit():
+            target_word_count = int(target_word_count_str)
+        elif target_word_count_str: # 如果输入了但不是数字，给个提示
+             QMessageBox.warning(self, "提示", "目标字数请输入有效的数字。")
+             # 可以选择在这里 return，或者继续生成但不带字数要求
+
         dialog = AIGenerateDialog(
             self,
             "AI生成章节内容",
@@ -431,7 +454,8 @@ class ChapterTab(QWidget):
             default_model="GPT",
             outline_info=outline_info,
             context_info=context_info,
-            prompt_manager=self.main_window.prompt_manager
+            prompt_manager=self.main_window.prompt_manager,
+            target_word_count=target_word_count # 传递目标字数
         )
 
         if dialog.exec() == QDialog.DialogCode.Accepted:
@@ -481,10 +505,10 @@ class ChapterTab(QWidget):
             if self.current_chapter_index < len(chapters):
                 chapter = chapters[self.current_chapter_index]
                 context_info["chapter_title"] = chapter.get("title", "")
-                context_info["chapter_number"] = self.current_chapter_index + 1
-                chapter_characters = chapter.get("characters", [])
-                if chapter_characters:
-                    context_info["chapter_characters"] = chapter_characters
+                context_info["chapter_number"] = self.current_chapter_index + 1 # 修正变量名
+                # 使用 self.selected_characters_for_chapter
+                if self.selected_characters_for_chapter:
+                    context_info["chapter_characters"] = self.selected_characters_for_chapter
                 previous_chapters = []
                 start_idx = max(0, self.current_chapter_index - 10)
                 for i in range(start_idx, self.current_chapter_index):
@@ -506,6 +530,15 @@ class ChapterTab(QWidget):
                 context_info["next_chapters"] = next_chapters
 
 
+        # 获取目标字数 (润色时也可能需要，虽然通常润色不限制字数，但保留逻辑)
+        target_word_count_str = self.word_count_input.text().strip()
+        target_word_count = None
+        if target_word_count_str.isdigit():
+            target_word_count = int(target_word_count_str)
+        elif target_word_count_str:
+             QMessageBox.warning(self, "提示", "目标字数请输入有效的数字。")
+
+
         # 调用修改后的 AIGenerateDialog
         dialog = AIGenerateDialog(
             self,
@@ -520,7 +553,8 @@ class ChapterTab(QWidget):
             # 传递新参数
             task_type="polish",
             selected_text=selected_text,
-            full_text=full_text
+            full_text=full_text,
+            target_word_count=target_word_count # 传递目标字数
         )
 
         if dialog.exec() == QDialog.DialogCode.Accepted:

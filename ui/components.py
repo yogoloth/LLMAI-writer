@@ -33,7 +33,7 @@ class AIGenerateDialog(QDialog):
 
     def __init__(self, parent=None, title="AI生成", field_name="内容", current_text="",
                  models=None, default_model="GPT", outline_info=None, context_info=None, prompt_manager=None,
-                 task_type="generate", selected_text=None, full_text=None): # 添加新参数
+                 task_type="generate", selected_text=None, full_text=None, target_word_count=None): # 添加新参数 target_word_count
         """
         初始化AI生成对话框
 
@@ -50,6 +50,7 @@ class AIGenerateDialog(QDialog):
             task_type: 任务类型 ('generate' 或 'polish')
             selected_text: 用户选定的文本 (用于润色任务)
             full_text: 完整的章节文本 (用于润色任务的上下文)
+            target_word_count: 目标字数 (可选)
         """
         super().__init__(parent)
         self.setWindowTitle(title)
@@ -66,6 +67,7 @@ class AIGenerateDialog(QDialog):
         self.task_type = task_type
         self.selected_text = selected_text
         self.full_text = full_text
+        self.target_word_count = target_word_count # 保存目标字数
 
         # 获取提示词管理器
         if prompt_manager:
@@ -113,7 +115,11 @@ class AIGenerateDialog(QDialog):
 3.  保持原文的核心意思和情节不变。
 4.  确保润色后的文本与上下文**自然衔接**，风格保持一致。
 5.  **只返回**润色后的目标文本段落本身，不要包含标记符或原文的其他部分。
-
+"""
+            # 移除润色任务的目标字数要求
+            # if self.target_word_count: # 添加目标字数要求（可选）
+            #     default_prompt += f"6. 目标字数：{self.target_word_count}字左右（仅供参考，优先保证润色质量）。\n"
+            default_prompt += """
 **小说信息:**
 """
             # 添加总大纲信息
@@ -279,8 +285,11 @@ class AIGenerateDialog(QDialog):
         # 添加章节内容生成的特殊要求
         if self.field_name == "章节内容":
             default_prompt += "要求：\n1. 生成完整的章节内容\n2. 保持原有风格\n3. 更加生动详细\n4. 逻辑连贯\n5. 与小说的整体设定保持一致\n6. 与前后章节内容保持连贯"
+            if self.target_word_count: # 添加目标字数要求
+                default_prompt += f"\n7. 目标字数：{self.target_word_count}字左右"
         else:
             default_prompt += "要求：\n1. 保持原有风格\n2. 更加生动详细\n3. 逻辑连贯\n4. 与小说的整体设定保持一致"
+            # 其他字段类型也可以添加字数要求，如果需要的话
 
         self.prompt_edit.setPlainText(default_prompt)
         prompt_layout.addWidget(self.prompt_edit)
