@@ -549,8 +549,29 @@ class OutlineTab(QWidget):
             existing_outline['synopsis'] = new_outline['synopsis']
         if 'worldbuilding' in new_outline and new_outline['worldbuilding'] and not existing_outline.get('worldbuilding'):
             existing_outline['worldbuilding'] = new_outline['worldbuilding']
-        if 'characters' in new_outline and new_outline['characters'] and not existing_outline.get('characters'):
-            existing_outline['characters'] = new_outline['characters']
+
+        # 合并角色数据
+        if 'characters' in new_outline and new_outline['characters']:
+            if not existing_outline.get('characters'):
+                # 如果已有大纲中没有角色数据，直接使用新生成的角色数据
+                existing_outline['characters'] = new_outline['characters']
+            else:
+                # 如果已有大纲中已有角色数据，合并新生成的角色数据
+                existing_characters = existing_outline.get('characters', [])
+                new_characters = new_outline.get('characters', [])
+
+                # 获取已有角色的名称列表，用于检查重复
+                existing_names = [char.get('name', '') for char in existing_characters]
+
+                # 添加不重复的新角色
+                for new_char in new_characters:
+                    new_name = new_char.get('name', '')
+                    if new_name and new_name not in existing_names:
+                        existing_characters.append(new_char)
+                        existing_names.append(new_name)
+
+                # 更新角色数据
+                existing_outline['characters'] = existing_characters
 
     def _select_characters(self):
         """选择章节出场角色"""
