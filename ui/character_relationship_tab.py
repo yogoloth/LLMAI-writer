@@ -286,33 +286,24 @@ class CharacterRelationshipTab(QWidget):
             # k 控制节点间距离，iterations 控制迭代次数
             pos = nx.spring_layout(G, k=0.5, iterations=50, seed=42) # 使用种子保证布局相对稳定
 
-            # 解决中文显示问题
-            # 尝试查找系统中的中文字体
-            font_path = None
-            possible_fonts = ['SimHei', 'Microsoft YaHei', 'Source Han Sans CN', 'WenQuanYi Micro Hei', 'sans-serif']
-            for font in possible_fonts:
-                try:
-                    # 检查字体是否可用
-                    matplotlib.font_manager.findfont(font, fallback_to_default=False)
-                    font_path = font
-                    print(f"人物关系图：找到可用中文字体: {font_path}") # Debug
-                    break
-                except:
-                    continue
-
-            if font_path:
-                 plt.rcParams['font.sans-serif'] = [font_path] # 指定中文字体
+            # 解决中文显示问题 - 直接使用项目根目录的字体文件
+            font_path = "SourceHanSansCN-Normal.otf"
+            if matplotlib.font_manager.findSystemFonts(fontpaths=[font_path]):
+                 print(f"人物关系图：使用字体文件: {font_path}") # Debug
+                 # 创建字体属性对象
+                 font_prop = matplotlib.font_manager.FontProperties(fname=font_path)
+                 plt.rcParams['axes.unicode_minus'] = False # 解决负号显示问题
             else:
-                 print("人物关系图：警告：未找到合适的中文字体，标签可能显示为方框。") # Debug
-                 # 可以考虑提供一个默认字体文件或让用户配置
-
-            plt.rcParams['axes.unicode_minus'] = False # 解决负号显示问题
+                 print(f"人物关系图：警告：未找到字体文件 {font_path}，标签可能显示不正确。") # Debug
+                 font_prop = None # 使用默认字体
+                 plt.rcParams['axes.unicode_minus'] = False # 仍然设置这个
 
             # 绘制图形
             nx.draw_networkx_nodes(G, pos, ax=self.ax, node_size=2000, node_color='skyblue', alpha=0.9)
             nx.draw_networkx_edges(G, pos, ax=self.ax, width=1.0, alpha=0.5, edge_color='gray')
-            nx.draw_networkx_labels(G, pos, ax=self.ax, font_size=10) # 移除 font_family='sans-serif' 让它使用 rcParams 设置
-            nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, ax=self.ax, font_size=8, font_color='red') # 移除 font_family
+            # 使用 fontproperties 参数指定字体
+            nx.draw_networkx_labels(G, pos, ax=self.ax, font_size=10, fontproperties=font_prop)
+            nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, ax=self.ax, font_size=8, font_color='red', fontproperties=font_prop)
 
             self.figure.tight_layout() # 调整布局防止标签重叠
             self.canvas.draw() # 刷新画布
