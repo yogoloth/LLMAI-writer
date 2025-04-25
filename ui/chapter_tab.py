@@ -234,36 +234,37 @@ class ChapterTab(QWidget):
 
 
     # _get_model_type 方法已不再需要，因为模型选择在 AIGenerateDialog 中进行
+    # 因此整个函数都被注释掉了
     # def _get_model_type(self):
-        """获取选择的模型类型"""
-        model_text = self.model_combo.currentText().lower()
-        if model_text == "gpt":
-            return "gpt"
-        elif model_text == "claude":
-            return "claude"
-        elif model_text == "gemini":
-            return "gemini"
-        elif model_text == "自定义openai":
-            return "custom_openai"
-        elif model_text == "modelscope":
-            return "modelscope"
-        elif model_text == "ollama":
-             return "ollama"
-        elif model_text == "siliconflow": # 添加 SiliconFlow 处理
-             return "siliconflow"
-        elif model_text in self.main_window.custom_openai_models: # 处理多个自定义模型
-             return model_text # 直接返回模型名称作为类型
-        else:
-            # 如果列表为空或选中的不在已知类型中，尝试返回第一个可用的
-            if self.main_window.has_gpt: return "gpt"
-            if self.main_window.has_claude: return "claude"
-            if self.main_window.has_gemini: return "gemini"
-            if self.main_window.has_custom_openai: return "custom_openai"
-            if self.main_window.has_modelscope: return "modelscope"
-            if self.main_window.has_ollama: return "ollama"
-            if self.main_window.has_siliconflow: return "siliconflow"
-            if self.main_window.custom_openai_models: return list(self.main_window.custom_openai_models.keys())[0]
-            raise ValueError("没有可用的AI模型") # 如果真的一个都没有
+    #     """获取选择的模型类型"""
+    #     # model_text = self.model_combo.currentText().lower() # 这行代码引用了已删除的 model_combo，需要删除
+    #     if model_text == "gpt":
+    #         return "gpt"
+    #     elif model_text == "claude":
+    #         return "claude"
+    #     elif model_text == "gemini":
+    #         return "gemini"
+    #     elif model_text == "自定义openai":
+    #         return "custom_openai"
+    #     elif model_text == "modelscope":
+    #         return "modelscope"
+    #     elif model_text == "ollama":
+    #          return "ollama"
+    #     elif model_text == "siliconflow": # 添加 SiliconFlow 处理
+    #          return "siliconflow"
+    #     elif model_text in self.main_window.custom_openai_models: # 处理多个自定义模型
+    #          return model_text # 直接返回模型名称作为类型
+    #     else:
+    #         # 如果列表为空或选中的不在已知类型中，尝试返回第一个可用的
+    #         if self.main_window.has_gpt: return "gpt"
+    #         if self.main_window.has_claude: return "claude"
+    #         if self.main_window.has_gemini: return "gemini"
+    #         if self.main_window.has_custom_openai: return "custom_openai"
+    #         if self.main_window.has_modelscope: return "modelscope"
+    #         if self.main_window.has_ollama: return "ollama"
+    #         if self.main_window.has_siliconflow: return "siliconflow"
+    #         if self.main_window.custom_openai_models: return list(self.main_window.custom_openai_models.keys())[0]
+    #         raise ValueError("没有可用的AI模型") # 如果真的一个都没有
 
     def _stream_callback(self, chunk):
         """流式生成回调函数"""
