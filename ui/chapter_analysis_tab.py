@@ -342,15 +342,16 @@ class ChapterAnalysisTab(QWidget):
             if result:
                 self._process_analysis_result(result, analysis_options)
 
-    def _get_available_models(self):
-        """获取可用的模型列表"""
-        models = ["GPT", "Claude", "Gemini", "自定义OpenAI", "ModelScope"]
-
-        # 添加自定义模型
-        if hasattr(self.main_window, 'custom_openai_models') and self.main_window.custom_openai_models:
-            models.extend(list(self.main_window.custom_openai_models.keys()))
-
-        return models
+# 这个方法已被下面的同名方法替代，保留注释以便理解代码历史
+    # def _get_available_models(self):
+    #     """获取可用的模型列表"""
+    #     models = ["GPT", "Claude", "Gemini", "自定义OpenAI", "ModelScope"]
+    #
+    #     # 添加自定义模型
+    #     if hasattr(self.main_window, 'custom_openai_models') and self.main_window.custom_openai_models:
+    #         models.extend(list(self.main_window.custom_openai_models.keys()))
+    #
+    #     return models
 
     def _build_analysis_prompt(self, chapter_contents, chapter_titles, outline_info, analysis_options):
         """构建分析提示词"""
