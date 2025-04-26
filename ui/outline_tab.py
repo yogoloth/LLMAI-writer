@@ -126,14 +126,14 @@ class OutlineTab(QWidget):
 
         # 添加卷数设置
         self.volume_count_spin = QSpinBox()
-        self.volume_count_spin.setRange(1, 999)
+        self.volume_count_spin.setRange(1, 9999)  # 增加最大值限制
         self.volume_count_spin.setValue(3)
         self.volume_count_spin.setSuffix(" 卷")
         info_layout.addRow("卷数:", self.volume_count_spin)
 
         # 添加每卷章节数设置
         self.chapters_per_volume_spin = QSpinBox()
-        self.chapters_per_volume_spin.setRange(1, 999)
+        self.chapters_per_volume_spin.setRange(1, 9999)  # 增加最大值限制
         self.chapters_per_volume_spin.setValue(10)
         self.chapters_per_volume_spin.setSuffix(" 章/卷")
         info_layout.addRow("每卷章节数:", self.chapters_per_volume_spin)
@@ -227,7 +227,7 @@ class OutlineTab(QWidget):
         start_volume_layout = QHBoxLayout()
         start_volume_layout.addWidget(QLabel("起始卷:"))
         self.start_volume_spin = QSpinBox()
-        self.start_volume_spin.setRange(1, 999)
+        self.start_volume_spin.setRange(1, 9999)  # 增加最大值限制
         self.start_volume_spin.setValue(1)
         start_volume_layout.addWidget(self.start_volume_spin)
         range_layout.addLayout(start_volume_layout)
@@ -236,7 +236,7 @@ class OutlineTab(QWidget):
         start_chapter_layout = QHBoxLayout()
         start_chapter_layout.addWidget(QLabel("起始章:"))
         self.start_chapter_spin = QSpinBox()
-        self.start_chapter_spin.setRange(1, 999)
+        self.start_chapter_spin.setRange(1, 9999)  # 增加最大值限制
         self.start_chapter_spin.setValue(1)
         start_chapter_layout.addWidget(self.start_chapter_spin)
         range_layout.addLayout(start_chapter_layout)
@@ -245,7 +245,7 @@ class OutlineTab(QWidget):
         end_volume_layout = QHBoxLayout()
         end_volume_layout.addWidget(QLabel("结束卷:"))
         self.end_volume_spin = QSpinBox()
-        self.end_volume_spin.setRange(1, 999)
+        self.end_volume_spin.setRange(1, 9999)  # 增加最大值限制
         self.end_volume_spin.setValue(1)
         end_volume_layout.addWidget(self.end_volume_spin)
         range_layout.addLayout(end_volume_layout)
@@ -254,7 +254,7 @@ class OutlineTab(QWidget):
         end_chapter_layout = QHBoxLayout()
         end_chapter_layout.addWidget(QLabel("结束章:"))
         self.end_chapter_spin = QSpinBox()
-        self.end_chapter_spin.setRange(1, 999)
+        self.end_chapter_spin.setRange(1, 9999)  # 增加最大值限制
         self.end_chapter_spin.setValue(10)
         end_chapter_layout.addWidget(self.end_chapter_spin)
         range_layout.addLayout(end_chapter_layout)

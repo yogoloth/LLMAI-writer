@@ -261,9 +261,9 @@ class AIGenerateDialog(QDialog):
                 # 添加前一章的内容
                 previous_chapter_content = self.context_info.get("previous_chapter_content", "")
                 if previous_chapter_content:
-                    # 如果前一章内容过长，只取前2000个字符
-                    if len(previous_chapter_content) > 2000:
-                        previous_chapter_content = previous_chapter_content[:2000] + "...(省略后续内容)"
+                    # 如果前一章内容过长，只取前5000个字符
+                    if len(previous_chapter_content) > 5000:
+                        previous_chapter_content = previous_chapter_content[:5000] + "...(省略后续内容)"
                     default_prompt += "前一章的内容：\n\n"
                     default_prompt += f"{previous_chapter_content}\n\n"
 
@@ -715,6 +715,8 @@ class AIGenerateDialog(QDialog):
             model_type = "modelscope"
         elif model_text == "ollama": # 添加对Ollama的判断
             model_type = "ollama"
+        elif model_text == "siliconflow": # 添加对SiliconFlow的判断
+            model_type = "siliconflow"
         else:
             # 如果下拉框里出现了这里没有处理的选项，显示错误
             QMessageBox.warning(self, "错误", f"无法识别的模型类型: {self.model_combo.currentText()}")
