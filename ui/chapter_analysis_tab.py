@@ -659,6 +659,14 @@ class ChapterAnalysisTab(QWidget):
             if result:
                 # 保存改进后的章节
                 self.main_window.set_chapter(self.current_volume_index, chapter_index, result)
+
+                # 更新章节标签页中的内容
+                chapter_tab = self.main_window.chapter_tab
+                if (chapter_tab.current_volume_index == self.current_volume_index and
+                    chapter_tab.current_chapter_index == chapter_index):
+                    chapter_tab.output_edit.setPlainText(result)
+                    chapter_tab.save_button.setEnabled(True)
+
                 # 显示成功消息
                 self.main_window.status_bar_manager.show_message(f"章节 '{chapter_title}' 已成功改进并保存")
                 QMessageBox.information(self, "改进成功", f"章节 '{chapter_title}' 已成功改进并保存")

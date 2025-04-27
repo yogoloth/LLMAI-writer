@@ -389,7 +389,7 @@ class AIGenerateDialog(QDialog):
         # 按钮部分
         button_layout = QHBoxLayout()
 
-        self.use_button = QPushButton("使用结果")
+        self.use_button = QPushButton("保存并使用")
         self.use_button.clicked.connect(self.accept)
         self.use_button.setEnabled(False)
         button_layout.addWidget(self.use_button)
