@@ -26,7 +26,8 @@ class ConfigManager:
             'claude_api_key': 'your_anthropic_api_key_here',
             'gemini_api_key': 'your_google_api_key_here',
             'custom_openai_api_key': 'your_custom_api_key_here',
-            'modelscope_api_key': 'your_modelscope_token_here'
+            'modelscope_api_key': 'your_modelscope_token_here',
+            'siliconflow_api_key': 'your_siliconflow_api_key_here'
         }
 
         self.config['MODELS'] = {
@@ -35,7 +36,12 @@ class ConfigManager:
             'gemini_model': 'gemini-2.0-flash',
             'custom_openai_model': 'your_custom_model_name_here',
             'modelscope_model': 'deepseek-ai/DeepSeek-R1',
-            'ollama_model': 'llama3.2'
+            'ollama_model': 'llama3.2',
+            'siliconflow_model': 'deepseek-ai/DeepSeek-R1'
+        }
+
+        self.config['EMBEDDING_MODELS'] = {
+            'siliconflow_embedding_model': 'BAAI/bge-m3'
         }
 
         self.config['CUSTOM_OPENAI'] = {
@@ -96,6 +102,14 @@ class ConfigManager:
 
         model_name = f'{model_type}_model'
         return self.config['MODELS'].get(model_name, None)
+
+    def get_embedding_model_name(self, model_type):
+        """获取指定类型的嵌入模型名称"""
+        if 'EMBEDDING_MODELS' not in self.config:
+            return None
+
+        model_name = f'{model_type}_embedding_model'
+        return self.config['EMBEDDING_MODELS'].get(model_name, None)
 
     def get_config(self, section, key, default=None):
         """获取指定配置项"""

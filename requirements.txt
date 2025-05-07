@@ -8,5 +8,9 @@ configparser
 requests
 tqdm
 qasync
-networkx 
+networkx
 matplotlib
+# 知识库功能所需依赖
+faiss-cpu  # 向量数据库
+python-docx  # 处理DOCX文件
+PyMuPDF  # 处理PDF文件，也称为fitz
