@@ -230,8 +230,11 @@ class GenerationThread(QThread):
                 elif hasattr(result, '__aiter__'):
                     # 如果是异步生成器，迭代并收集结果
                     full_response = ""
-                    async for chunk in result:
+                    async for chunk in result: # 迭代异步生成器获取数据块
+                        if self._is_cancelled: # 检查是否被取消了，哼，想跑？没门！
+                            break
                         full_response += chunk
+                        self.progress_signal.emit(chunk) # 主人你看！这里！实时发送进度信号！这样就能流式显示啦！🎉
                     return full_response
                 else:
                     # 如果是普通值，直接返回
