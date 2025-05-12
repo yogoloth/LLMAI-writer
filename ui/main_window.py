@@ -22,6 +22,8 @@ from models.custom_openai_model import CustomOpenAIModel
 from models.modelscope_model import ModelScopeModel
 from models.ollama_model import OllamaModel
 from models.siliconflow_model import SiliconFlowModel # 导入 SiliconFlow 模型
+from embedding_models.siliconflow_embedding import SiliconFlowEmbedding # 导入 SiliconFlow 嵌入模型
+from utils.knowledge_base_manager import KnowledgeBaseManager # 导入知识库管理器
 
 from ui.components import ThemeManager, StatusBarManager, KeyboardShortcutManager
 from ui.outline_tab import OutlineTab
@@ -68,6 +70,12 @@ class MainWindow(QMainWindow):
 
         # 初始化AI模型
         self._init_models()
+
+        # 初始化 Embedding 模型 (需要放在模型初始化之后，因为它可能依赖模型配置)
+        self._init_embedding_model()
+
+        # 初始化知识库管理器 (需要 Embedding 模型)
+        self._init_knowledge_base_manager()
 
         # 创建主题管理器
         self.theme_manager = ThemeManager(QApplication.instance())
@@ -249,6 +257,60 @@ class MainWindow(QMainWindow):
         else:
             # 如果模型类型字符串本身就不认识
              raise ValueError(f"未知的模型类型: {model_type}")
+
+    def _init_embedding_model(self):
+        """初始化 Embedding 模型"""
+        # 优先使用 SiliconFlow Embedding，如果配置了的话
+        if self.config_manager.get_api_key('siliconflow_embedding') or self.config_manager.get_api_key('siliconflow'): # 兼容旧配置
+             try:
+                 # 注意：SiliconFlowEmbedding 可能需要 config_manager
+                 self.embedding_model = SiliconFlowEmbedding(self.config_manager)
+                 print("SiliconFlow Embedding 模型初始化成功。")
+             except Exception as e:
+                 self.embedding_model = None
+                 print(f"SiliconFlow Embedding 模型初始化失败: {e}")
+                 QMessageBox.warning(self, "Embedding模型失败", "SiliconFlow Embedding 模型初始化失败，知识库功能可能受限。")
+        else:
+             self.embedding_model = None
+             print("未配置 SiliconFlow Embedding 模型。知识库功能将受限。")
+             # 这里可以考虑添加对其他 Embedding 模型的支持，或者提示用户配置
+
+    def _init_knowledge_base_manager(self):
+        """初始化知识库管理器"""
+        if self.embedding_model:
+            try:
+                self.knowledge_base_manager = KnowledgeBaseManager(config_manager=self.config_manager, embedding_model=self.embedding_model) # 同时传递配置管理器和嵌入模型
+                print("知识库管理器初始化成功。")
+            except Exception as e:
+                self.knowledge_base_manager = None
+                print(f"知识库管理器初始化失败: {e}")
+                QMessageBox.warning(self, "知识库管理器失败", f"知识库管理器初始化失败: {e}")
+        else:
+            self.knowledge_base_manager = None
+            print("由于 Embedding 模型未初始化，知识库管理器无法初始化。")
+            # 可以选择性地在这里也弹窗提示用户
+
+    def get_knowledge_base_manager(self):
+        """获取知识库管理器实例"""
+        # 添加一个检查，确保管理器已成功初始化
+        if not hasattr(self, 'knowledge_base_manager') or self.knowledge_base_manager is None:
+             print("警告: 尝试访问未初始化的知识库管理器。")
+             # 可以选择抛出异常或返回 None，这里返回 None 可能更安全
+             # raise RuntimeError("知识库管理器未成功初始化。")
+             return None
+        return self.knowledge_base_manager
+
+    def get_available_knowledge_bases(self):
+        """获取可用的知识库列表"""
+        manager = self.get_knowledge_base_manager()
+        if manager:
+            try:
+                return manager.list_knowledge_bases()
+            except Exception as e:
+                print(f"获取知识库列表时出错: {e}")
+                # 出错时返回空列表，避免后续代码出错
+                return []
+        return [] # 如果管理器不存在，也返回空列表
 
     def _create_toolbar(self):
         """创建工具栏"""

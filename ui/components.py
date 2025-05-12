@@ -19,29 +19,33 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt, pyqtSignal, pyqtSlot, QSize, QTimer, QPoint
 from PyQt6.QtGui import QIcon, QKeySequence, QShortcut, QFont, QColor, QPalette, QAction
-
+from typing import List # 主人，我加了这个！
+ 
 from utils.async_utils import GenerationThread, ProgressIndicator, AsyncHelper
 from ui.styles import get_style
-
-
+from utils.knowledge_base_manager import KnowledgeBaseManager # 主人，还有这个！
+ 
+ 
 class AIGenerateDialog(QDialog):
     """
     AI生成对话框
-
+ 
     用于使用AI生成内容的通用对话框
     """
-
+ 
     def __init__(self, parent=None, title="AI生成", field_name="内容", current_text="",
                  models=None, default_model="GPT", outline_info=None, context_info=None, prompt_manager=None,
-                 task_type="generate", selected_text=None, full_text=None, target_word_count=None): # 添加新参数 target_word_count
+                 task_type="generate", selected_text=None, full_text=None, target_word_count=None,
+                 knowledge_base_manager: KnowledgeBaseManager = None, # 新增知识库管理器
+                 available_knowledge_bases: List[str] = None): # 新增可用知识库列表
         """
         初始化AI生成对话框
-
+ 
         Args:
             parent: 父窗口
             title: 对话框标题
             field_name: 字段名称 (例如 "章节内容", "章节摘要")
-            current_text: 当前文本 (用于生成任务的上下文或基础)
+            c urrent_text: 当前文本 (用于生成任务的上下文或基础)
             models: 可用的模型列表
             default_model: 默认选择的模型
             outline_info: 总大纲信息
@@ -51,6 +55,8 @@ class AIGenerateDialog(QDialog):
             selected_text: 用户选定的文本 (用于润色任务)
             full_text: 完整的章节文本 (用于润色任务的上下文)
             target_word_count: 目标字数 (可选)
+            knowledge_base_manager: 知识库管理器实例
+            available_knowledge_bases: 可用的知识库名称列表
         """
         super().__init__(parent)
         self.setWindowTitle(title)
@@ -68,7 +74,11 @@ class AIGenerateDialog(QDialog):
         self.selected_text = selected_text
         self.full_text = full_text
         self.target_word_count = target_word_count # 保存目标字数
-
+        self.knowledge_base_manager = knowledge_base_manager
+        self.available_knowledge_bases = available_knowledge_bases if available_knowledge_bases is not None else []
+        self.kb_query_thread = None # 用于知识库查询的线程
+        self.kb_result_buttons = [] # 用于存储知识库结果按钮
+ 
         # 获取提示词管理器
         if prompt_manager:
             self.prompt_manager = prompt_manager
@@ -363,12 +373,76 @@ class AIGenerateDialog(QDialog):
 
         model_layout.addStretch()
         layout.addLayout(model_layout)
-
+ 
+        # 知识库辅助部分
+        self.kb_group = QGroupBox("知识库辅助")
+        kb_layout = QVBoxLayout()
+ 
+        self.enable_kb_checkbox = QCheckBox("启用知识库辅助")
+        self.enable_kb_checkbox.setChecked(False) # 默认不启用
+        self.enable_kb_checkbox.toggled.connect(self._on_toggle_knowledge_base)
+        kb_layout.addWidget(self.enable_kb_checkbox)
+ 
+        kb_controls_layout = QFormLayout()
+        self.kb_select_combo = QComboBox()
+        if self.available_knowledge_bases:
+            self.kb_select_combo.addItems(self.available_knowledge_bases)
+        else:
+            self.kb_select_combo.addItem("无可用知识库")
+            self.kb_select_combo.setEnabled(False)
+        kb_controls_layout.addRow("选择知识库:", self.kb_select_combo)
+ 
+        self.kb_query_edit = QLineEdit()
+        kb_controls_layout.addRow("查询关键词:", self.kb_query_edit)
+ 
+        self.kb_results_count_spinbox = QSpinBox()
+        self.kb_results_count_spinbox.setMinimum(1)
+        self.kb_results_count_spinbox.setMaximum(20) # 主人可以按需调整最大值
+        self.kb_results_count_spinbox.setValue(5)   # 默认返回5条
+        kb_controls_layout.addRow("返回结果数量:", self.kb_results_count_spinbox)
+        kb_layout.addLayout(kb_controls_layout)
+ 
+        self.kb_query_button = QPushButton("查询知识库")
+        self.kb_query_button.clicked.connect(self._on_query_knowledge_base_clicked)
+        kb_layout.addWidget(self.kb_query_button)
+ 
+        # 给这个 QLabel 设置 objectName，方便查找
+        self.kb_results_label = QLabel("选择应用的结果：")
+        self.kb_results_label.setObjectName("kb_results_label")
+        kb_layout.addWidget(self.kb_results_label)
+ 
+        kb_results_actions_layout = QHBoxLayout()
+        self.kb_select_all_button = QPushButton("全选/全不选")
+        self.kb_select_all_button.setCheckable(True)
+        self.kb_select_all_button.toggled.connect(self._on_select_all_kb_results_toggled)
+        kb_results_actions_layout.addWidget(self.kb_select_all_button)
+        kb_results_actions_layout.addStretch()
+        kb_layout.addLayout(kb_results_actions_layout)
+ 
+        self.kb_results_scroll_area = QScrollArea()
+        self.kb_results_scroll_area.setWidgetResizable(True)
+        self.kb_results_scroll_area.setFixedHeight(100) # 给滚动区域一个初始高度
+        self.kb_results_widget = QWidget()
+        self.kb_results_layout = QHBoxLayout(self.kb_results_widget) # 横向排列结果按钮
+        self.kb_results_widget.setLayout(self.kb_results_layout)
+        self.kb_results_scroll_area.setWidget(self.kb_results_widget)
+        kb_layout.addWidget(self.kb_results_scroll_area)
+ 
+        self.kb_confirm_button = QPushButton("确认应用的查询结果")
+        self.kb_confirm_button.clicked.connect(self._on_confirm_apply_kb_results)
+        kb_layout.addWidget(self.kb_confirm_button)
+ 
+        self.kb_group.setLayout(kb_layout)
+        layout.addWidget(self.kb_group)
+ 
+        # 初始时禁用知识库UI组件
+        self._on_toggle_knowledge_base(False)
+ 
         # 生成按钮
         generate_button = QPushButton("生成")
         generate_button.clicked.connect(self.generate)
         layout.addWidget(generate_button)
-
+ 
         # 结果部分
         result_group = QGroupBox("生成结果")
         result_layout = QVBoxLayout()
@@ -795,8 +869,167 @@ class AIGenerateDialog(QDialog):
     def get_result(self):
         """获取生成结果"""
         return self.result_text
+ 
+    def _on_toggle_knowledge_base(self, is_enabled: bool):
+        """根据复选框状态控制知识库相关UI的显隐和可用性"""
+        # 这些控件应该一直可见，但根据is_enabled来启用/禁用
+        self.kb_select_combo.setEnabled(is_enabled and bool(self.available_knowledge_bases) and self.available_knowledge_bases[0] != "无可用知识库")
+        self.kb_query_edit.setEnabled(is_enabled)
+        self.kb_results_count_spinbox.setEnabled(is_enabled)
+        self.kb_query_button.setEnabled(is_enabled)
+ 
+        # 这些控件的可见性也受is_enabled控制
+        # 使用 objectName 查找 QLabel，而不是容易出错的 text
+        kb_results_label = self.findChild(QLabel, "kb_results_label")
+        if kb_results_label:
+            kb_results_label.setVisible(is_enabled)
+        self.kb_select_all_button.setVisible(is_enabled)
+        self.kb_results_scroll_area.setVisible(is_enabled)
+        self.kb_confirm_button.setVisible(is_enabled)
+ 
+        # 如果禁用了，清空结果区域并重置按钮
+        if not is_enabled:
+            self._clear_kb_results()
+            self.kb_select_all_button.setChecked(False)
+ 
+    def _clear_kb_results(self):
+        """清空知识库查询结果区域"""
+        for button in self.kb_result_buttons:
+            self.kb_results_layout.removeWidget(button)
+            button.deleteLater()
+        self.kb_result_buttons.clear()
+ 
+    def _on_query_knowledge_base_clicked(self):
+        """处理查询知识库按钮点击事件"""
+        if not self.knowledge_base_manager:
+            QMessageBox.warning(self, "知识库错误", "知识库管理器未初始化！")
+            return
+ 
+        kb_name = self.kb_select_combo.currentText()
+        query_text = self.kb_query_edit.text().strip()
+        top_k = self.kb_results_count_spinbox.value()
+ 
+        if not query_text:
+            QMessageBox.warning(self, "输入提示", "请输入查询关键词！")
+            return
+ 
+        if kb_name == "无可用知识库":
+            QMessageBox.warning(self, "选择提示", "请先配置并选择一个可用的知识库！")
+            return
+ 
+        # 清空旧结果
+        self._clear_kb_results()
+        self.kb_query_button.setEnabled(False) # 查询期间禁用按钮
+        self.progress_bar.setVisible(True) # 显示主进度条
+ 
+        # 使用类似GenerationThread的方式进行异步查询
+        # 注意：KnowledgeBaseManager.query()本身可能是阻塞的，所以放入线程
+        self.kb_query_thread = GenerationThread(
+            self.knowledge_base_manager.query, # 传递方法本身
+            (kb_name, query_text, top_k),      # 参数元组
+            {}                                 # 关键字参数字典
+        )
+        self.kb_query_thread.finished_signal.connect(self._on_kb_query_finished)
+        self.kb_query_thread.error_signal.connect(self._on_kb_query_error)
+        self.kb_query_thread.start()
+ 
+    def _on_kb_query_finished(self, results):
+        """知识库查询完成后的处理"""
+        self.kb_query_button.setEnabled(True) # 恢复按钮
+        self.progress_bar.setVisible(False)   # 隐藏主进度条
+ 
+        if not results:
+            QMessageBox.information(self, "查询结果", "未能查询到相关知识片段。")
+            return
+ 
+        # 正确遍历字典列表，而不是尝试解包元组！哼，这点小事还要本小姐出手！
+        for i, result_item in enumerate(results):
+            # 使用 .get() 安全地获取内容和得分，防止字典里没这些键，真是麻烦死了！
+            doc_content = result_item.get('text', '')
+            score = result_item.get('score', 0.0)
 
+            # 创建一个可勾选的按钮来显示结果摘要
+            # 为了简单，按钮文本可以是 "结果 N (相关度: X.XX)"
+            # 实际内容存储在按钮的属性中
+            summary = doc_content[:50] + "..." if len(doc_content) > 50 else doc_content # 简单摘要
+            btn_text = f"片段{i+1} (相关度: {score:.2f})\n{summary}"
+            result_button = QPushButton(btn_text)
+            # 确保按钮是可勾选的，这样才能被选中！哼，这点小事还要本小姐提醒！
+            result_button.setCheckable(True)
+            result_button.setChecked(False) # 默认不选中
+            result_button.setProperty("full_text", doc_content) # 存储完整文本
+            result_button.setToolTip(doc_content) # 鼠标悬浮显示完整内容
+            # 连接 toggled 信号到样式更新方法，哼，看你还怎么普通！
+            result_button.toggled.connect(lambda checked, b=result_button: self._update_kb_button_style(b, checked))
+            # 设置初始样式（未选中）
+            self._update_kb_button_style(result_button, False)
+            self.kb_results_layout.addWidget(result_button)
+            self.kb_result_buttons.append(result_button)
+        self.kb_select_all_button.setChecked(False) # 新结果加载后，重置全选按钮
 
+    def _on_kb_query_error(self, error_message):
+        """知识库查询出错的处理"""
+        self.kb_query_button.setEnabled(True) # 恢复按钮
+        self.progress_bar.setVisible(False)   # 隐藏主进度条
+        QMessageBox.critical(self, "查询失败", f"查询知识库时发生错误：\n{error_message}")
+ 
+    def _on_select_all_kb_results_toggled(self, checked: bool):
+        """处理全选/全不选按钮状态改变"""
+        for button in self.kb_result_buttons:
+            button.setChecked(checked)
+            # 手动触发样式更新，不然怎么知道你变了！真是的！
+            self._update_kb_button_style(button, checked)
+
+    # 新增：更新知识库按钮样式的方法，本小姐亲自操刀！ψ(｀∇´)ψ
+    def _update_kb_button_style(self, button: QPushButton, checked: bool):
+        """根据选中状态更新按钮样式"""
+        if checked:
+            # 选中状态：浅蓝色背景，蓝色边框，够醒目了吧！
+            button.setStyleSheet("background-color: lightblue; border: 1px solid blue;")
+        else:
+            # 未选中状态：恢复默认样式，别挡着本小姐的视线！
+            button.setStyleSheet("") # 清空样式，使用默认
+
+    def _on_confirm_apply_kb_results(self):
+        """收集选中的知识库结果并应用到主提示词编辑器"""
+        selected_texts = []
+        for button in self.kb_result_buttons:
+            if button.isChecked():
+                selected_texts.append(button.property("full_text"))
+ 
+        if not selected_texts:
+            QMessageBox.information(self, "提示", "请至少选择一个知识库查询结果进行应用。")
+            return
+ 
+        # 格式化知识片段
+        formatted_kb_results = "根据知识库查询，有以下相关结果参考：\n"
+        for text in selected_texts:
+            formatted_kb_results += f"- {text}\n"
+ 
+        # 标记
+        start_marker = "<!-- KB_RESULTS_START -->"
+        end_marker = "<!-- KB_RESULTS_END -->"
+ 
+        current_prompt = self.prompt_edit.toPlainText()
+        start_index = current_prompt.find(start_marker)
+        end_index = current_prompt.find(end_marker)
+ 
+        final_kb_block = f"{start_marker}\n{formatted_kb_results}{end_marker}\n"
+ 
+        if start_index != -1 and end_index != -1 and start_index < end_index:
+            # 替换标记之间的内容
+            before_marker = current_prompt[:start_index]
+            after_marker = current_prompt[end_index + len(end_marker):]
+            new_prompt = before_marker + final_kb_block + after_marker
+        else:
+            # 如果找不到标记，或者标记顺序不正确，则在末尾追加 (或者主人可以指定其他位置)
+            # 为了确保标记存在，我们将整个块（包括标记）附加
+            new_prompt = current_prompt.rstrip() + "\n\n" + final_kb_block
+ 
+        self.prompt_edit.setPlainText(new_prompt)
+        QMessageBox.information(self, "成功", "选中的知识库结果已应用到提示词中！")
+ 
+ 
 class DraggableListWidget(QListWidget):
     """
     可拖放的列表控件

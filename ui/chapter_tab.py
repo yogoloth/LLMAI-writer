@@ -441,7 +441,10 @@ class ChapterTab(QWidget):
             outline_info=outline_info,
             context_info=context_info,
             prompt_manager=self.main_window.prompt_manager,
-            target_word_count=target_word_count # 传递目标字数
+            target_word_count=target_word_count, # 传递目标字数
+            # 新增：传递知识库管理器和可用知识库列表
+            knowledge_base_manager=self.main_window.get_knowledge_base_manager(),
+            available_knowledge_bases=self.main_window.get_available_knowledge_bases()
         )
 
         if dialog.exec() == QDialog.DialogCode.Accepted:
@@ -540,7 +543,10 @@ class ChapterTab(QWidget):
             task_type="polish",
             selected_text=selected_text,
             full_text=full_text,
-            target_word_count=target_word_count # 传递目标字数
+            target_word_count=target_word_count, # 传递目标字数
+            # 新增：传递知识库管理器和可用知识库列表
+            knowledge_base_manager=self.main_window.get_knowledge_base_manager(),
+            available_knowledge_bases=self.main_window.get_available_knowledge_bases()
         )
 
         if dialog.exec() == QDialog.DialogCode.Accepted:

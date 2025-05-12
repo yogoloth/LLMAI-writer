@@ -730,7 +730,10 @@ class ChapterOutlineTab(QWidget):
             default_model="GPT",
             outline_info=outline_info,
             context_info=context_info,
-            prompt_manager=self.main_window.prompt_manager
+            prompt_manager=self.main_window.prompt_manager,
+            # 新增：传递知识库管理器和可用知识库列表
+            knowledge_base_manager=self.main_window.get_knowledge_base_manager(),
+            available_knowledge_bases=self.main_window.get_available_knowledge_bases()
         )
         if dialog.exec() == QDialog.DialogCode.Accepted:
             result = dialog.get_result()

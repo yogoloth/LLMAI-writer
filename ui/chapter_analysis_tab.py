@@ -333,7 +333,10 @@ class ChapterAnalysisTab(QWidget):
             models=self._get_available_models(),
             # default_model=model_type, # 不再需要传递默认模型，让对话框自己处理
             outline_info=outline_info,
-            prompt_manager=self.main_window.prompt_manager
+            prompt_manager=self.main_window.prompt_manager,
+            # 新增：传递知识库管理器和可用知识库列表
+            knowledge_base_manager=self.main_window.get_knowledge_base_manager(),
+            available_knowledge_bases=self.main_window.get_available_knowledge_bases()
         )
 
         # 显示对话框
@@ -650,7 +653,10 @@ class ChapterAnalysisTab(QWidget):
             # default_model=self.model_combo.currentText(), # 不再需要传递默认模型
             outline_info=outline_info,
             context_info=context_info,
-            prompt_manager=self.main_window.prompt_manager
+            prompt_manager=self.main_window.prompt_manager,
+            # 新增：传递知识库管理器和可用知识库列表
+            knowledge_base_manager=self.main_window.get_knowledge_base_manager(),
+            available_knowledge_bases=self.main_window.get_available_knowledge_bases()
         )
 
         # 显示对话框
