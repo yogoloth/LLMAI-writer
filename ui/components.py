@@ -20,12 +20,13 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, pyqtSignal, pyqtSlot, QSize, QTimer, QPoint
 from PyQt6.QtGui import QIcon, QKeySequence, QShortcut, QFont, QColor, QPalette, QAction
 from typing import List # 主人，我加了这个！
- 
+from utils.config_manager import ConfigManager # 主人，为了您，本小姐特地加上了这个！
+
 from utils.async_utils import GenerationThread, ProgressIndicator, AsyncHelper
 from ui.styles import get_style
 from utils.knowledge_base_manager import KnowledgeBaseManager # 主人，还有这个！
- 
- 
+
+
 class AIGenerateDialog(QDialog):
     """
     AI生成对话框
@@ -37,15 +38,16 @@ class AIGenerateDialog(QDialog):
                  models=None, default_model="GPT", outline_info=None, context_info=None, prompt_manager=None,
                  task_type="generate", selected_text=None, full_text=None, target_word_count=None,
                  knowledge_base_manager: KnowledgeBaseManager = None, # 新增知识库管理器
-                 available_knowledge_bases: List[str] = None): # 新增可用知识库列表
+                 available_knowledge_bases: List[str] = None,
+                 config_manager: ConfigManager = None): # 新增配置管理器，哼，本小姐办事就是这么周到！
         """
         初始化AI生成对话框
- 
+
         Args:
             parent: 父窗口
             title: 对话框标题
             field_name: 字段名称 (例如 "章节内容", "章节摘要")
-            c urrent_text: 当前文本 (用于生成任务的上下文或基础)
+            current_text: 当前文本 (用于生成任务的上下文或基础)
             models: 可用的模型列表
             default_model: 默认选择的模型
             outline_info: 总大纲信息
@@ -57,6 +59,7 @@ class AIGenerateDialog(QDialog):
             target_word_count: 目标字数 (可选)
             knowledge_base_manager: 知识库管理器实例
             available_knowledge_bases: 可用的知识库名称列表
+            config_manager: 配置管理器实例，哼，这个可是关键！
         """
         super().__init__(parent)
         self.setWindowTitle(title)
@@ -66,9 +69,10 @@ class AIGenerateDialog(QDialog):
         self.result_text = ""
         self.generation_thread = None
         self.models = models or ["GPT", "Claude", "Gemini", "自定义OpenAI", "ModelScope", "Ollama", "SiliconFlow"] # 保持模型列表更新
-        self.default_model = default_model if default_model in self.models else self.models[0]
+        self.default_model = default_model # 这个 default_model 是传入的，优先级在已保存模型之后
         self.outline_info = outline_info or {}
         self.context_info = context_info or {}
+        self.config_manager = config_manager # 保存配置管理器实例，哼，本小姐记性好着呢！
         # 保存新参数
         self.task_type = task_type
         self.selected_text = selected_text
@@ -78,7 +82,7 @@ class AIGenerateDialog(QDialog):
         self.available_knowledge_bases = available_knowledge_bases if available_knowledge_bases is not None else []
         self.kb_query_thread = None # 用于知识库查询的线程
         self.kb_result_buttons = [] # 用于存储知识库结果按钮
- 
+
         # 获取提示词管理器
         if prompt_manager:
             self.prompt_manager = prompt_manager
@@ -363,10 +367,33 @@ class AIGenerateDialog(QDialog):
 
         self.model_combo = QComboBox()
         self.model_combo.addItems(self.models)
-        # 设置默认模型
-        index = self.model_combo.findText(self.default_model)
-        if index >= 0:
-            self.model_combo.setCurrentIndex(index)
+
+        # 设置默认选中的模型，哼，这里的逻辑可是本小姐精心设计的！
+        selected_model_to_set = None
+        if self.config_manager:
+            last_selected_model = self.config_manager.get_last_selected_model()
+            if last_selected_model and last_selected_model in self.models:
+                selected_model_to_set = last_selected_model
+                # print(f"调试：使用已保存的模型: {selected_model_to_set}") # 哼，调试信息，用完就删！
+
+        if not selected_model_to_set and self.default_model and self.default_model in self.models:
+            selected_model_to_set = self.default_model
+            # print(f"调试：使用传入的默认模型: {selected_model_to_set}") # 哼，调试信息，用完就删！
+
+        if not selected_model_to_set and self.models:
+            selected_model_to_set = self.models[0]
+            # print(f"调试：使用列表第一个模型: {selected_model_to_set}") # 哼，调试信息，用完就删！
+
+        if selected_model_to_set:
+            index = self.model_combo.findText(selected_model_to_set)
+            if index >= 0:
+                self.model_combo.setCurrentIndex(index)
+            # else:
+                # print(f"调试：模型 {selected_model_to_set} 在列表中找不到，将使用第一个。") # 哼，找不到就算了！
+                # if self.models: self.model_combo.setCurrentIndex(0) # 以防万一
+        elif self.models: # 如果一个都没选上，并且列表不为空，那就选第一个吧，真是麻烦！
+            self.model_combo.setCurrentIndex(0)
+
         model_layout.addWidget(self.model_combo)
 
         # 温度设置已移除
@@ -872,7 +899,13 @@ class AIGenerateDialog(QDialog):
         # 启用按钮
         self.use_button.setEnabled(True)
         self.copy_button.setEnabled(True)
-        self.findChild(QPushButton, "").setEnabled(True)
+        self.findChild(QPushButton, "").setEnabled(True) # 重新启用生成按钮
+
+        # 保存用户选择的模型，哼，这点小事本小姐顺手就办了！
+        if self.config_manager:
+            selected_model_name = self.model_combo.currentText()
+            self.config_manager.save_last_selected_model(selected_model_name)
+            # print(f"调试：已保存选择的模型: {selected_model_name}") # 哼，调试信息，用完就删！
 
         QMessageBox.information(self, "完成", "内容生成完成")
 

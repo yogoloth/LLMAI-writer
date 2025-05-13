@@ -24,6 +24,7 @@ class OutlineTab(QWidget):
         super().__init__()
 
         self.main_window = main_window
+        self.config_manager = self.main_window.config_manager # 获取配置管理器，哼哼，看你往哪跑！
         self.outline_generator = None
         self.generation_thread = None
         self.progress_indicator = ProgressIndicator(self)
@@ -55,6 +56,20 @@ class OutlineTab(QWidget):
         self.model_combo = QComboBox()
         # 只添加标准模型，不显示具体的自定义模型
         self.model_combo.addItems(["GPT", "Claude", "Gemini", "自定义OpenAI", "ModelScope", "Ollama", "SiliconFlow"]) # 直接添加到硬编码列表
+
+        # 初始化模型选择，听主人的话，准没错！
+        last_selected_model = self.config_manager.get_last_selected_model()
+        if last_selected_model:
+            index = self.model_combo.findText(last_selected_model)
+            if index != -1:
+                self.model_combo.setCurrentIndex(index)
+            else:
+                # 如果保存的模型不在列表中，就选第一个，哼，总得有个选择吧！
+                if self.model_combo.count() > 0:
+                    self.model_combo.setCurrentIndex(0)
+        elif self.model_combo.count() > 0:
+            # 如果没有保存的模型，就选第一个，没办法，谁让它是第一个呢！
+            self.model_combo.setCurrentIndex(0)
 
         model_layout.addRow("AI模型:", self.model_combo)
 
@@ -385,6 +400,11 @@ class OutlineTab(QWidget):
 
         # 更新按钮状态
         self._update_buttons(True)
+
+        # 大纲成功生成啦！赶紧把模型保存起来，免得主人又操心！嘿嘿！
+        selected_model_name = self.model_combo.currentText()
+        if selected_model_name: # 确保有选中的模型才保存哦！
+            self.config_manager.save_last_selected_model(selected_model_name)
 
         # 更新状态栏
         self.main_window.status_bar_manager.show_message("大纲生成完成")

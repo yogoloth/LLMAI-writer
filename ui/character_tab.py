@@ -10,6 +10,7 @@ from PyQt6.QtCore import Qt, pyqtSignal, pyqtSlot
 
 from utils.async_utils import GenerationThread, ProgressIndicator
 from ui.components import AIGenerateDialog
+from utils.config_manager import ConfigManager # 导入 ConfigManager
 
 class CharacterDetailDialog(QDialog):
     """角色详情对话框"""
@@ -118,6 +119,7 @@ class CharacterTab(QWidget):
         super().__init__()
 
         self.main_window = main_window
+        self.config_manager = main_window.config_manager # 获取 ConfigManager 实例
         self.characters = []
         self.generation_thread = None
 
@@ -176,7 +178,17 @@ class CharacterTab(QWidget):
 
         self.model_combo = QComboBox()
         # 添加 SiliconFlow 到硬编码列表
-        self.model_combo.addItems(["GPT", "Claude", "Gemini", "自定义OpenAI", "ModelScope", "Ollama", "SiliconFlow"])
+        available_models = ["GPT", "Claude", "Gemini", "自定义OpenAI", "ModelScope", "Ollama", "SiliconFlow"]
+        # 还可以考虑从 main_window 获取更动态的模型列表，但这里暂时遵循现有逻辑
+        self.model_combo.addItems(available_models)
+
+        # 初始化模型选择
+        last_selected_model = self.config_manager.get_last_selected_model()
+        if last_selected_model and last_selected_model in available_models:
+            self.model_combo.setCurrentText(last_selected_model)
+        elif available_models: # 如果没有保存的模型或保存的模型不在列表中，则选择第一个
+            self.model_combo.setCurrentIndex(0)
+
         ai_button_layout.addWidget(self.model_combo)
 
         character_layout.addLayout(ai_button_layout)
@@ -567,6 +579,12 @@ class CharacterTab(QWidget):
         self.characters.append(result)
         self._update_character_list()
         self._save_characters()
+
+        # 保存用户选择的模型
+        selected_model_name = self.model_combo.currentText()
+        if selected_model_name: # 确保有选中的模型
+            self.config_manager.save_last_selected_model(selected_model_name)
+            print(f"角色生成成功，已保存模型: {selected_model_name}") # 调试用，可以删掉
 
         # 选中新角色
         self.character_list.setCurrentRow(len(self.characters) - 1)

@@ -65,6 +65,10 @@ class ConfigManager:
             'api_url': 'http://localhost:11434/api/chat'
         }
 
+        self.config['USER_PREFERENCES'] = {
+            'last_selected_model': ''  # 上次选择的模型，默认为空
+        }
+
         with open(self.config_path, 'w', encoding='utf-8') as f:
             self.config.write(f)
 
@@ -272,6 +276,24 @@ class ConfigManager:
                 return model
 
         return None
+
+    def get_last_selected_model(self) -> str | None:
+        """获取上次选择的模型名称"""
+        if 'USER_PREFERENCES' not in self.config:
+            return None
+        return self.config['USER_PREFERENCES'].get('last_selected_model', None)
+
+    def save_last_selected_model(self, model_name: str) -> None:
+        """
+        保存上次选择的模型名称
+
+        Args:
+            model_name (str): 要保存的模型名称
+        """
+        if 'USER_PREFERENCES' not in self.config:
+            self.config['USER_PREFERENCES'] = {}
+        self.config['USER_PREFERENCES']['last_selected_model'] = model_name
+        self.save_config() # 确保更改被保存到文件
 
     def save_config(self):
         """保存配置到文件"""
