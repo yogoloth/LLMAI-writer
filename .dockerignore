@@ -39,3 +39,4 @@ config.ini
 *.ainovel
 1/
 prompt_history.json
+memory-bank/

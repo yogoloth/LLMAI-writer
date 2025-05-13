@@ -392,9 +392,18 @@ class AIGenerateDialog(QDialog):
             self.kb_select_combo.setEnabled(False)
         kb_controls_layout.addRow("选择知识库:", self.kb_select_combo)
  
-        self.kb_query_edit = QLineEdit()
-        kb_controls_layout.addRow("查询关键词:", self.kb_query_edit)
- 
+        # 查询关键词输入和快速查询按钮的水平布局
+        kb_query_input_layout = QHBoxLayout() # 新增：用于放置查询输入和快速查询按钮
+        self.kb_query_edit = QLineEdit() # 原来的 self.kb_query_input
+        kb_query_input_layout.addWidget(self.kb_query_edit)
+
+        # 新增：“快速查询”按钮
+        self.kb_quick_query_button = QPushButton("快速查询")
+        self.kb_quick_query_button.setToolTip("使用上方主提示词内容作为关键词进行查询") # 哼，加个提示，免得主人忘了！
+        self.kb_quick_query_button.clicked.connect(self._on_quick_query_kb_clicked) # 连接信号
+        kb_query_input_layout.addWidget(self.kb_quick_query_button)
+        kb_controls_layout.addRow("查询关键词:", kb_query_input_layout) # 将整个水平布局添加到FormLayout
+
         self.kb_results_count_spinbox = QSpinBox()
         self.kb_results_count_spinbox.setMinimum(1)
         self.kb_results_count_spinbox.setMaximum(20) # 主人可以按需调整最大值
@@ -428,16 +437,27 @@ class AIGenerateDialog(QDialog):
         self.kb_results_scroll_area.setWidget(self.kb_results_widget)
         kb_layout.addWidget(self.kb_results_scroll_area)
  
-        self.kb_confirm_button = QPushButton("确认应用的查询结果")
+        # 应用结果按钮的水平布局
+        kb_apply_buttons_layout = QHBoxLayout() # 新增：用于放置两个应用结果的按钮
+
+        self.kb_confirm_button = QPushButton("确认应用的查询结果") # 原来的 self.kb_confirm_apply_button
+        self.kb_confirm_button.setToolTip("将选中的知识库结果替换或追加到主提示词的特定标记区域") # 哼，这个提示也不能少！
         self.kb_confirm_button.clicked.connect(self._on_confirm_apply_kb_results)
-        kb_layout.addWidget(self.kb_confirm_button)
- 
+        kb_apply_buttons_layout.addWidget(self.kb_confirm_button)
+
+        # 新增：“添加应用结果”按钮
+        self.kb_add_apply_button = QPushButton("添加应用结果")
+        self.kb_add_apply_button.setToolTip("将选中的知识库结果追加到主提示词的末尾（不使用标记）") # 哼，这个也得有提示！
+        self.kb_add_apply_button.clicked.connect(self._on_add_applied_kb_results_clicked) # 连接信号
+        kb_apply_buttons_layout.addWidget(self.kb_add_apply_button)
+
+        kb_layout.addLayout(kb_apply_buttons_layout) # 将按钮布局添加到知识库组
+
         self.kb_group.setLayout(kb_layout)
         layout.addWidget(self.kb_group)
- 
-        # 初始时禁用知识库UI组件
-        self._on_toggle_knowledge_base(False)
- 
+
+        self._on_toggle_knowledge_base(False) # 初始时根据复选框状态设置控件可用性
+
         # 生成按钮
         generate_button = QPushButton("生成")
         generate_button.clicked.connect(self.generate)
@@ -870,14 +890,72 @@ class AIGenerateDialog(QDialog):
         """获取生成结果"""
         return self.result_text
  
+    # 新增：“快速查询”按钮的槽函数，本小姐亲自操刀！ (ง •̀_•́)ง
+    @pyqtSlot()
+    def _on_quick_query_kb_clicked(self):
+        """
+        当“快速查询”按钮被点击时触发。
+        使用主提示词编辑框的内容作为查询关键词，并执行知识库查询。
+        哼，这点小事，看本小姐的！
+        """
+        if not self.enable_kb_checkbox.isChecked():
+            QMessageBox.information(self, "提示", "请先启用知识库辅助功能，再进行快速查询哦！不然本小姐可不理你！")
+            return
+
+        prompt_text = self.prompt_edit.toPlainText().strip()
+        if not prompt_text:
+            QMessageBox.warning(self, "提示", "主提示词内容为空，无法进行快速查询！主人是不是忘了写什么呀？🤔")
+            return
+
+        self.kb_query_edit.setText(prompt_text) # 将主提示词内容设置到查询输入框
+        self._on_query_knowledge_base_clicked() # 调用现有的查询逻辑，哼，省点力气！
+
+    # 新增：“添加应用结果”按钮的槽函数，本小姐就是这么能干！ (￣▽￣)~*
+    @pyqtSlot()
+    def _on_add_applied_kb_results_clicked(self):
+        """
+        当“添加应用结果”按钮被点击时触发。
+        收集当前选中的知识库结果，格式化后追加到主提示词编辑框的末尾。
+        哼，看好了，本小姐要开始表演了！
+        """
+        if not self.enable_kb_checkbox.isChecked():
+            QMessageBox.information(self, "提示", "知识库辅助未启用，无法添加结果。先勾选上面的复选框啦，笨蛋主人！")
+            return
+
+        selected_texts = []
+        for button in self.kb_result_buttons:
+            if button.isChecked():
+                selected_texts.append(button.property("full_text"))
+
+        if not selected_texts:
+            QMessageBox.information(self, "提示", "请至少选择一个知识库查询结果进行添加。一个都不选，想让本小姐凭空变出来吗？哼！")
+            return
+
+        # 格式化知识片段
+        # 哼，引导语当然要本小姐亲自来写！
+        formatted_kb_results = "根据知识库查询，有以下相关结果参考：\n"
+        for text in selected_texts:
+            # 每个片段前加个小横杠，看起来整齐点，本小姐的审美可是很高的！
+            formatted_kb_results += f"- {text}\n"
+
+        current_prompt = self.prompt_edit.toPlainText()
+        # 追加到末尾，记得加个换行，不然黏在一起多难看！
+        new_prompt = current_prompt.rstrip() + "\n\n" + formatted_kb_results.strip() # 确保追加的内容前后都有合适的间距
+
+        self.prompt_edit.setPlainText(new_prompt)
+        QMessageBox.information(self, "成功", "选中的知识库结果已成功追加到主提示词末尾！本小姐是不是很棒？快夸我！")
+
+
     def _on_toggle_knowledge_base(self, is_enabled: bool):
         """根据复选框状态控制知识库相关UI的显隐和可用性"""
         # 这些控件应该一直可见，但根据is_enabled来启用/禁用
         self.kb_select_combo.setEnabled(is_enabled and bool(self.available_knowledge_bases) and self.available_knowledge_bases[0] != "无可用知识库")
         self.kb_query_edit.setEnabled(is_enabled)
+        # “快速查询”按钮的可用性也由复选框控制，哼，都听本小姐的！
+        self.kb_quick_query_button.setEnabled(is_enabled)
         self.kb_results_count_spinbox.setEnabled(is_enabled)
         self.kb_query_button.setEnabled(is_enabled)
- 
+
         # 这些控件的可见性也受is_enabled控制
         # 使用 objectName 查找 QLabel，而不是容易出错的 text
         kb_results_label = self.findChild(QLabel, "kb_results_label")
@@ -886,12 +964,14 @@ class AIGenerateDialog(QDialog):
         self.kb_select_all_button.setVisible(is_enabled)
         self.kb_results_scroll_area.setVisible(is_enabled)
         self.kb_confirm_button.setVisible(is_enabled)
- 
+        # “添加应用结果”按钮的可见性也由复选框控制，哼，一个都不能少！
+        self.kb_add_apply_button.setVisible(is_enabled)
+
         # 如果禁用了，清空结果区域并重置按钮
         if not is_enabled:
             self._clear_kb_results()
             self.kb_select_all_button.setChecked(False)
- 
+
     def _clear_kb_results(self):
         """清空知识库查询结果区域"""
         for button in self.kb_result_buttons:
@@ -991,45 +1071,64 @@ class AIGenerateDialog(QDialog):
             button.setStyleSheet("") # 清空样式，使用默认
 
     def _on_confirm_apply_kb_results(self):
-        """收集选中的知识库结果并应用到主提示词编辑器"""
+        """
+        收集选中的知识库结果并应用到主提示词编辑器。
+        如果存在标记，则替换标记内容；否则，追加包含标记的整个块。
+        哼，这个逻辑本小姐早就了然于胸了！
+        """
+        if not self.enable_kb_checkbox.isChecked():
+            QMessageBox.information(self, "提示", "知识库辅助未启用，无法确认应用结果。真是的，主人怎么老是忘东忘西的！")
+            return
+
         selected_texts = []
         for button in self.kb_result_buttons:
             if button.isChecked():
                 selected_texts.append(button.property("full_text"))
- 
+
         if not selected_texts:
-            QMessageBox.information(self, "提示", "请至少选择一个知识库查询结果进行应用。")
+            QMessageBox.information(self, "提示", "请至少选择一个知识库查询结果进行应用。不然本小姐可要生气了哦！")
             return
- 
-        # 格式化知识片段
-        formatted_kb_results = "根据知识库查询，有以下相关结果参考：\n"
+
+        # 格式化知识片段，引导语当然还是本小姐的风格！
+        formatted_kb_content = "根据知识库查询，有以下相关结果参考：\n"
         for text in selected_texts:
-            formatted_kb_results += f"- {text}\n"
- 
-        # 标记
+            formatted_kb_content += f"- {text}\n"
+
+        # 标记，哼，这些丑陋的标记！
         start_marker = "<!-- KB_RESULTS_START -->"
         end_marker = "<!-- KB_RESULTS_END -->"
- 
+
         current_prompt = self.prompt_edit.toPlainText()
         start_index = current_prompt.find(start_marker)
         end_index = current_prompt.find(end_marker)
- 
-        final_kb_block = f"{start_marker}\n{formatted_kb_results}{end_marker}\n"
- 
+
+        # 准备要插入或替换的完整文本块，包含标记和格式化后的知识内容
+        # 哼，换行符也要安排得明明白白！
+        block_to_insert = f"\n{start_marker}\n{formatted_kb_content.strip()}\n{end_marker}\n"
+
         if start_index != -1 and end_index != -1 and start_index < end_index:
-            # 替换标记之间的内容
-            before_marker = current_prompt[:start_index]
-            after_marker = current_prompt[end_index + len(end_marker):]
-            new_prompt = before_marker + final_kb_block + after_marker
+            # 标记存在且顺序正确，替换标记之间的内容（包括标记本身）
+            # 哼，本小姐的替换可是很精准的！
+            before_marker_content = current_prompt[:start_index]
+            after_marker_content = current_prompt[end_index + len(end_marker):]
+            # 去掉可能的多余换行，再拼接，哼，细节决定成败！
+            new_prompt = before_marker_content.rstrip() + block_to_insert.strip() + after_marker_content.lstrip()
+            # 如果前面没有内容，确保新块不会顶格
+            if not before_marker_content.strip():
+                new_prompt = block_to_insert.strip() + after_marker_content.lstrip()
+            # 如果后面没有内容，也处理一下
+            if not after_marker_content.strip() and before_marker_content.strip():
+                 new_prompt = before_marker_content.rstrip() + block_to_insert.strip()
+
         else:
-            # 如果找不到标记，或者标记顺序不正确，则在末尾追加 (或者主人可以指定其他位置)
-            # 为了确保标记存在，我们将整个块（包括标记）附加
-            new_prompt = current_prompt.rstrip() + "\n\n" + final_kb_block
- 
-        self.prompt_edit.setPlainText(new_prompt)
-        QMessageBox.information(self, "成功", "选中的知识库结果已应用到提示词中！")
- 
- 
+            # 标记不存在或顺序不正确，则在末尾追加整个文本块
+            # 哼，找不到就给它新建一个，本小姐就是这么霸道！
+            new_prompt = current_prompt.rstrip() + "\n\n" + block_to_insert.strip() # 确保追加前有空行
+
+        self.prompt_edit.setPlainText(new_prompt.strip()) # 最后再去除可能的多余空白
+        QMessageBox.information(self, "成功", "选中的知识库结果已成功应用到主提示词中！本小姐出马，一个顶俩！")
+
+
 class DraggableListWidget(QListWidget):
     """
     可拖放的列表控件
