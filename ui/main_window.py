@@ -44,7 +44,7 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         # 设置窗口标题和大小
-        self.setWindowTitle("AI小说生成器 v0.76")
+        self.setWindowTitle("AI小说生成器 v0.80")
         self.resize(1200, 800)
 
         # 加载配置

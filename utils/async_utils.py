@@ -234,7 +234,7 @@ class GenerationThread(QThread):
                         if self._is_cancelled: # 检查是否被取消了，哼，想跑？没门！
                             break
                         full_response += chunk
-                        self.progress_signal.emit(chunk) # 主人你看！这里！实时发送进度信号！这样就能流式显示啦！🎉
+                        self.progress_signal.emit(chunk) # 这里！实时发送进度信号！这样就能流式显示啦！🎉
                     return full_response
                 else:
                     # 如果是普通值，直接返回

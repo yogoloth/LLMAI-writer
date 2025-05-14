@@ -57,7 +57,7 @@ class OutlineTab(QWidget):
         # 只添加标准模型，不显示具体的自定义模型
         self.model_combo.addItems(["GPT", "Claude", "Gemini", "自定义OpenAI", "ModelScope", "Ollama", "SiliconFlow"]) # 直接添加到硬编码列表
 
-        # 初始化模型选择，听主人的话，准没错！
+        # 初始化模型选择
         last_selected_model = self.config_manager.get_last_selected_model()
         if last_selected_model:
             index = self.model_combo.findText(last_selected_model)
@@ -401,7 +401,7 @@ class OutlineTab(QWidget):
         # 更新按钮状态
         self._update_buttons(True)
 
-        # 大纲成功生成啦！赶紧把模型保存起来，免得主人又操心！嘿嘿！
+        # 大纲成功生成啦！赶紧把模型保存起来
         selected_model_name = self.model_combo.currentText()
         if selected_model_name: # 确保有选中的模型才保存哦！
             self.config_manager.save_last_selected_model(selected_model_name)

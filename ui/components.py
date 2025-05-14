@@ -19,12 +19,12 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt, pyqtSignal, pyqtSlot, QSize, QTimer, QPoint
 from PyQt6.QtGui import QIcon, QKeySequence, QShortcut, QFont, QColor, QPalette, QAction
-from typing import List # 主人，我加了这个！
-from utils.config_manager import ConfigManager # 主人，为了您，本小姐特地加上了这个！
+from typing import List 
+from utils.config_manager import ConfigManager 
 
 from utils.async_utils import GenerationThread, ProgressIndicator, AsyncHelper
 from ui.styles import get_style
-from utils.knowledge_base_manager import KnowledgeBaseManager # 主人，还有这个！
+from utils.knowledge_base_manager import KnowledgeBaseManager 
 
 
 class AIGenerateDialog(QDialog):
@@ -39,7 +39,7 @@ class AIGenerateDialog(QDialog):
                  task_type="generate", selected_text=None, full_text=None, target_word_count=None,
                  knowledge_base_manager: KnowledgeBaseManager = None, # 新增知识库管理器
                  available_knowledge_bases: List[str] = None,
-                 config_manager: ConfigManager = None): # 新增配置管理器，哼，本小姐办事就是这么周到！
+                 config_manager: ConfigManager = None): # 新增配置管理器，
         """
         初始化AI生成对话框
 
@@ -72,7 +72,7 @@ class AIGenerateDialog(QDialog):
         self.default_model = default_model # 这个 default_model 是传入的，优先级在已保存模型之后
         self.outline_info = outline_info or {}
         self.context_info = context_info or {}
-        self.config_manager = config_manager # 保存配置管理器实例，哼，本小姐记性好着呢！
+        self.config_manager = config_manager # 保存配置管理器实例！
         # 保存新参数
         self.task_type = task_type
         self.selected_text = selected_text
@@ -368,7 +368,7 @@ class AIGenerateDialog(QDialog):
         self.model_combo = QComboBox()
         self.model_combo.addItems(self.models)
 
-        # 设置默认选中的模型，哼，这里的逻辑可是本小姐精心设计的！
+        # 设置默认选中的模型
         selected_model_to_set = None
         if self.config_manager:
             last_selected_model = self.config_manager.get_last_selected_model()
@@ -426,14 +426,14 @@ class AIGenerateDialog(QDialog):
 
         # 新增：“快速查询”按钮
         self.kb_quick_query_button = QPushButton("快速查询")
-        self.kb_quick_query_button.setToolTip("使用上方主提示词内容作为关键词进行查询") # 哼，加个提示，免得主人忘了！
+        self.kb_quick_query_button.setToolTip("使用上方主提示词内容作为关键词进行查询") 
         self.kb_quick_query_button.clicked.connect(self._on_quick_query_kb_clicked) # 连接信号
         kb_query_input_layout.addWidget(self.kb_quick_query_button)
         kb_controls_layout.addRow("查询关键词:", kb_query_input_layout) # 将整个水平布局添加到FormLayout
 
         self.kb_results_count_spinbox = QSpinBox()
         self.kb_results_count_spinbox.setMinimum(1)
-        self.kb_results_count_spinbox.setMaximum(20) # 主人可以按需调整最大值
+        self.kb_results_count_spinbox.setMaximum(20) 
         self.kb_results_count_spinbox.setValue(5)   # 默认返回5条
         kb_controls_layout.addRow("返回结果数量:", self.kb_results_count_spinbox)
         kb_layout.addLayout(kb_controls_layout)
@@ -901,7 +901,7 @@ class AIGenerateDialog(QDialog):
         self.copy_button.setEnabled(True)
         self.findChild(QPushButton, "").setEnabled(True) # 重新启用生成按钮
 
-        # 保存用户选择的模型，哼，这点小事本小姐顺手就办了！
+        # 保存用户选择的模型
         if self.config_manager:
             selected_model_name = self.model_combo.currentText()
             self.config_manager.save_last_selected_model(selected_model_name)
@@ -923,36 +923,34 @@ class AIGenerateDialog(QDialog):
         """获取生成结果"""
         return self.result_text
  
-    # 新增：“快速查询”按钮的槽函数，本小姐亲自操刀！ (ง •̀_•́)ง
+    # 新增：“快速查询”按钮的槽函数
     @pyqtSlot()
     def _on_quick_query_kb_clicked(self):
         """
         当“快速查询”按钮被点击时触发。
         使用主提示词编辑框的内容作为查询关键词，并执行知识库查询。
-        哼，这点小事，看本小姐的！
         """
         if not self.enable_kb_checkbox.isChecked():
-            QMessageBox.information(self, "提示", "请先启用知识库辅助功能，再进行快速查询哦！不然本小姐可不理你！")
+            QMessageBox.information(self, "提示", "请先启用知识库辅助功能，再进行快速查询哦！")
             return
 
         prompt_text = self.prompt_edit.toPlainText().strip()
         if not prompt_text:
-            QMessageBox.warning(self, "提示", "主提示词内容为空，无法进行快速查询！主人是不是忘了写什么呀？🤔")
+            QMessageBox.warning(self, "提示", "主提示词内容为空，无法进行快速查询！")
             return
 
         self.kb_query_edit.setText(prompt_text) # 将主提示词内容设置到查询输入框
         self._on_query_knowledge_base_clicked() # 调用现有的查询逻辑，哼，省点力气！
 
-    # 新增：“添加应用结果”按钮的槽函数，本小姐就是这么能干！ (￣▽￣)~*
+    # 新增：“添加应用结果”按钮的槽函数 (￣▽￣)~*
     @pyqtSlot()
     def _on_add_applied_kb_results_clicked(self):
         """
         当“添加应用结果”按钮被点击时触发。
         收集当前选中的知识库结果，格式化后追加到主提示词编辑框的末尾。
-        哼，看好了，本小姐要开始表演了！
         """
         if not self.enable_kb_checkbox.isChecked():
-            QMessageBox.information(self, "提示", "知识库辅助未启用，无法添加结果。先勾选上面的复选框啦，笨蛋主人！")
+            QMessageBox.information(self, "提示", "知识库辅助未启用，无法添加结果。先勾选上面的复选框啦，笨蛋！")
             return
 
         selected_texts = []
@@ -961,14 +959,13 @@ class AIGenerateDialog(QDialog):
                 selected_texts.append(button.property("full_text"))
 
         if not selected_texts:
-            QMessageBox.information(self, "提示", "请至少选择一个知识库查询结果进行添加。一个都不选，想让本小姐凭空变出来吗？哼！")
+            QMessageBox.information(self, "提示", "请至少选择一个知识库查询结果进行添加。")
             return
 
         # 格式化知识片段
-        # 哼，引导语当然要本小姐亲自来写！
         formatted_kb_results = "根据知识库查询，有以下相关结果参考：\n"
         for text in selected_texts:
-            # 每个片段前加个小横杠，看起来整齐点，本小姐的审美可是很高的！
+            # 每个片段前加个小横杠，看起来整齐点！
             formatted_kb_results += f"- {text}\n"
 
         current_prompt = self.prompt_edit.toPlainText()
@@ -976,7 +973,7 @@ class AIGenerateDialog(QDialog):
         new_prompt = current_prompt.rstrip() + "\n\n" + formatted_kb_results.strip() # 确保追加的内容前后都有合适的间距
 
         self.prompt_edit.setPlainText(new_prompt)
-        QMessageBox.information(self, "成功", "选中的知识库结果已成功追加到主提示词末尾！本小姐是不是很棒？快夸我！")
+        QMessageBox.information(self, "成功", "选中的知识库结果已成功追加到主提示词末尾！")
 
 
     def _on_toggle_knowledge_base(self, is_enabled: bool):
@@ -984,7 +981,7 @@ class AIGenerateDialog(QDialog):
         # 这些控件应该一直可见，但根据is_enabled来启用/禁用
         self.kb_select_combo.setEnabled(is_enabled and bool(self.available_knowledge_bases) and self.available_knowledge_bases[0] != "无可用知识库")
         self.kb_query_edit.setEnabled(is_enabled)
-        # “快速查询”按钮的可用性也由复选框控制，哼，都听本小姐的！
+        # “快速查询”按钮的可用性也由复选框控制
         self.kb_quick_query_button.setEnabled(is_enabled)
         self.kb_results_count_spinbox.setEnabled(is_enabled)
         self.kb_query_button.setEnabled(is_enabled)
@@ -1055,7 +1052,7 @@ class AIGenerateDialog(QDialog):
             QMessageBox.information(self, "查询结果", "未能查询到相关知识片段。")
             return
  
-        # 正确遍历字典列表，而不是尝试解包元组！哼，这点小事还要本小姐出手！
+        # 正确遍历字典列表，而不是尝试解包元组
         for i, result_item in enumerate(results):
             # 使用 .get() 安全地获取内容和得分，防止字典里没这些键，真是麻烦死了！
             doc_content = result_item.get('text', '')
@@ -1067,7 +1064,7 @@ class AIGenerateDialog(QDialog):
             summary = doc_content[:50] + "..." if len(doc_content) > 50 else doc_content # 简单摘要
             btn_text = f"片段{i+1} (相关度: {score:.2f})\n{summary}"
             result_button = QPushButton(btn_text)
-            # 确保按钮是可勾选的，这样才能被选中！哼，这点小事还要本小姐提醒！
+            # 确保按钮是可勾选的，这样才能被选中！
             result_button.setCheckable(True)
             result_button.setChecked(False) # 默认不选中
             result_button.setProperty("full_text", doc_content) # 存储完整文本
@@ -1093,24 +1090,24 @@ class AIGenerateDialog(QDialog):
             # 手动触发样式更新，不然怎么知道你变了！真是的！
             self._update_kb_button_style(button, checked)
 
-    # 新增：更新知识库按钮样式的方法，本小姐亲自操刀！ψ(｀∇´)ψ
+    # 新增：更新知识库按钮样式的方法
     def _update_kb_button_style(self, button: QPushButton, checked: bool):
         """根据选中状态更新按钮样式"""
         if checked:
             # 选中状态：浅蓝色背景，蓝色边框，够醒目了吧！
             button.setStyleSheet("background-color: lightblue; border: 1px solid blue;")
         else:
-            # 未选中状态：恢复默认样式，别挡着本小姐的视线！
+            # 未选中状态：恢复默认样式，
             button.setStyleSheet("") # 清空样式，使用默认
 
     def _on_confirm_apply_kb_results(self):
         """
         收集选中的知识库结果并应用到主提示词编辑器。
         如果存在标记，则替换标记内容；否则，追加包含标记的整个块。
-        哼，这个逻辑本小姐早就了然于胸了！
+
         """
         if not self.enable_kb_checkbox.isChecked():
-            QMessageBox.information(self, "提示", "知识库辅助未启用，无法确认应用结果。真是的，主人怎么老是忘东忘西的！")
+            QMessageBox.information(self, "提示", "知识库辅助未启用，无法确认应用结果。！")
             return
 
         selected_texts = []
@@ -1119,10 +1116,10 @@ class AIGenerateDialog(QDialog):
                 selected_texts.append(button.property("full_text"))
 
         if not selected_texts:
-            QMessageBox.information(self, "提示", "请至少选择一个知识库查询结果进行应用。不然本小姐可要生气了哦！")
+            QMessageBox.information(self, "提示", "请至少选择一个知识库查询结果进行应用。")
             return
 
-        # 格式化知识片段，引导语当然还是本小姐的风格！
+        # 格式化知识片段
         formatted_kb_content = "根据知识库查询，有以下相关结果参考：\n"
         for text in selected_texts:
             formatted_kb_content += f"- {text}\n"
@@ -1141,7 +1138,7 @@ class AIGenerateDialog(QDialog):
 
         if start_index != -1 and end_index != -1 and start_index < end_index:
             # 标记存在且顺序正确，替换标记之间的内容（包括标记本身）
-            # 哼，本小姐的替换可是很精准的！
+          
             before_marker_content = current_prompt[:start_index]
             after_marker_content = current_prompt[end_index + len(end_marker):]
             # 去掉可能的多余换行，再拼接，哼，细节决定成败！
@@ -1155,11 +1152,11 @@ class AIGenerateDialog(QDialog):
 
         else:
             # 标记不存在或顺序不正确，则在末尾追加整个文本块
-            # 哼，找不到就给它新建一个，本小姐就是这么霸道！
+            
             new_prompt = current_prompt.rstrip() + "\n\n" + block_to_insert.strip() # 确保追加前有空行
 
         self.prompt_edit.setPlainText(new_prompt.strip()) # 最后再去除可能的多余空白
-        QMessageBox.information(self, "成功", "选中的知识库结果已成功应用到主提示词中！本小姐出马，一个顶俩！")
+        QMessageBox.information(self, "成功", "选中的知识库结果已成功应用到主提示词中！")
 
 
 class DraggableListWidget(QListWidget):
