@@ -389,3 +389,8 @@ Mr. Claude：claude.ai
 Mr. Gemini：gemini.google.com
 Mr. GPT：chatgpt.com
 如有问题或建议，请通过 GitHub Issues 与我们联系。
+## 📜 授权协议 (License)
+
+本项目基于 **GNU Affero General Public License v3.0 (AGPL-3.0)** 进行授权。
+
+**⚠️ 重要提示：** 本项目的 [`LICENSE`](LICENSE) 文件中包含了在 AGPL-3.0 基础之上附加的 **补充条款**。这些补充条款对代码的商业使用等方面做出了额外约定。请务必在复制、使用、修改或分发本项目代码前，仔细阅读并理解 [`LICENSE`](LICENSE) 文件中的全部内容，特别是补充条款部分，以确保您的行为符合所有授权要求。
