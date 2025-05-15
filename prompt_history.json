@@ -24,5 +24,31 @@
       "volume_count": 3,
       "chapters_per_volume": 10
     }
+  },
+  {
+    "prompt": "大纲生成: 玄幻 - 玄幻",
+    "model": "gemini",
+    "result": "",
+    "timestamp": 1747307487.5567665,
+    "metadata": {
+      "title": "玄幻",
+      "genre": "玄幻",
+      "theme": "玄幻",
+      "volume_count": 3,
+      "chapters_per_volume": 10
+    }
+  },
+  {
+    "prompt": "大纲生成: 玄幻 - 玄幻",
+    "model": "gemini",
+    "result": "",
+    "timestamp": 1747307706.3051574,
+    "metadata": {
+      "title": "玄幻",
+      "genre": "玄幻",
+      "theme": "玄幻",
+      "volume_count": 3,
+      "chapters_per_volume": 10
+    }
   }
 ]
