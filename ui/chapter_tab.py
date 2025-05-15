@@ -380,7 +380,7 @@ class ChapterTab(QWidget):
                 chapter = chapters[self.current_chapter_index]
                 context_info["chapter_title"] = chapter.get("title", "")
                 context_info["chapter_number"] = self.current_chapter_index + 1
-                context_info["chapter_summary"] = chapter.get("summary", "") # 本小天才把摘要加上了！看你还漏不漏！
+                context_info["chapter_summary"] = chapter.get("summary", "") # 把摘要加上了！看你还漏不漏！
 
                 # 添加章节出场角色信息 (使用 self.selected_characters_for_chapter)
                 # chapter_characters = chapter.get("characters", []) # 从 outline 获取

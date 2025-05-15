@@ -375,7 +375,7 @@ class OutlineTab(QWidget):
         # 隐藏进度条
         self.progress_bar.setVisible(False)
 
-        # 检查生成结果是否包含错误，本小天才的火眼金睛可不是盖的！
+        # 检查生成结果是否包含错误！
         if isinstance(result, dict) and "error" in result:
             error_message = result.get("raw_response", str(result.get("error", "未知解析错误"))) # 尝试获取更详细的错误信息
             self._on_error(f"大纲解析失败: {error_message}")

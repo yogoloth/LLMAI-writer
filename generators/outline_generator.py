@@ -55,7 +55,7 @@ class OutlineGenerator:
 
         # 检查解析结果，如果解析失败，则直接返回错误信息字典，让上层处理
         if isinstance(generated_outline, dict) and "error" in generated_outline:
-            return generated_outline # 本小天才加了错误检查！看你还怎么崩！
+            return generated_outline # 错误检查！看你还怎么崩！
 
         # 如果有已有大纲且指定了生成范围，则合并大纲
         if existing_outline and start_volume and end_volume:
