@@ -3,6 +3,7 @@
 
 import json
 import asyncio
+import logging # 导入logging模块！
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
     QTextEdit, QPushButton, QComboBox, QGroupBox, QFormLayout,
@@ -371,64 +372,126 @@ class OutlineTab(QWidget):
 
     @pyqtSlot(object)
     def _on_finished(self, result):
-        """处理完成信号"""
-        # 隐藏进度条
-        self.progress_bar.setVisible(False)
-
-        # 检查生成结果是否包含错误！
-        if isinstance(result, dict) and "error" in result:
-            error_message = result.get("raw_response", str(result.get("error", "未知解析错误"))) # 尝试获取更详细的错误信息
-            self._on_error(f"大纲解析失败: {error_message}")
-            return
-
-        # 更新UI
-        self.generate_button.setEnabled(True)
-        self.save_button.setEnabled(True)
-
-        # 在大纲中添加原始输入信息
-        # 确保 result 是字典并且可以安全地添加新键
-        if not isinstance(result, dict):
-            self._on_error(f"接收到的大纲结果格式不正确: {type(result)}")
-            return
+        """
+        处理大纲生成完成的信号。
+        这里会进行严格的检查和异常处理，确保UI更新的稳健性。哼，休想在这里搞鬼！
+        """
+        # 中文日志：大纲生成线程终于完事了！
+        logging.info("Outline generation thread finished. Processing result.")
 
         try:
-            result["input_info"] = {
-                "title": self.title_edit.text().strip(),
-                "genre": self.genre_edit.text().strip(),
-                "theme": self.theme_edit.toPlainText().strip(),
-                "style": self.style_edit.toPlainText().strip(),
-                "synopsis": self.synopsis_edit.toPlainText().strip()
-            }
-        except Exception as e: # 以防万一，捕获一下字典操作的异常
-            self._on_error(f"处理大纲输入信息时出错: {e}")
+            # 隐藏进度条，不管成功失败，这玩意儿都该消失了！
+            if self.progress_bar: # 先判断一下控件是否存在，以防万一嘛！
+                self.progress_bar.setVisible(False)
+        except Exception as e:
+            # 中文日志：隐藏个进度条都能出错？真是活久见！
+            logging.error(f"隐藏进度条时发生异常: {e}", exc_info=True)
+            # 即使这里出错，也尝试继续，毕竟不是核心逻辑
+
+        # 步骤1：检查核心结果的有效性，这是最重要的一关！
+        if not isinstance(result, dict):
+            # 中文日志：收到的这是个啥玩意儿？连个字典都不是！直接打回去！
+            error_msg = f"大纲生成结果类型不正确，期望是字典，实际是 {type(result)}。"
+            logging.error(error_msg)
+            logging.debug(f"错误的 result 内容: {result}") # 记录一下这个奇葩的result
+            self._on_error(error_msg)
             return
 
+        if "error" in result:
+            # 中文日志：结果里直接带了error标记，看来是生成器那边就出问题了！
+            raw_response_preview = str(result.get("raw_response", ""))[:200] # 只看前200个字符，免得日志太长
+            error_detail = result.get("message", str(result.get("error", "未知解析错误")))
+            full_error_message = f"大纲解析失败或生成器返回错误: {error_detail} (部分原始响应: {raw_response_preview}...)"
+            logging.error(full_error_message)
+            logging.debug(f"包含错误的完整 result: {result}") # 记录完整的错误信息
+            self._on_error(full_error_message)
+            return
 
-        # 获取生成范围
-        start_volume = self.start_volume_spin.value()
-        start_chapter = self.start_chapter_spin.value()
-        end_volume = self.end_volume_spin.value()
-        end_chapter = self.end_chapter_spin.value()
+        # 中文日志：初步检查通过，result是个字典，而且没有直接的error标记。继续深入检查！
+        logging.info("初步检查通过，result是一个没有直接error标记的字典。")
 
-        # 设置大纲 (合并逻辑已移至生成器中)
-        self.main_window.set_outline(result)
+        # 步骤2：安全地更新UI控件状态
+        try:
+            if self.generate_button: # 先检查按钮是否存在
+                self.generate_button.setEnabled(True)
+            if self.save_button: # 清空输出按钮
+                self.save_button.setEnabled(True) # 只要有结果（不是直接错误），就允许清空
+        except Exception as e:
+            # 中文日志：更新按钮状态都能出错？这界面是纸糊的吗！
+            logging.error(f"更新按钮状态时发生异常: {e}", exc_info=True)
+            # 这里出错了也别停，尝试继续
 
-        # 更新按钮状态
-        self._update_buttons(True)
+        # 步骤3：安全地将用户输入信息添加到大纲结果中
+        try:
+            # 中文日志：准备把用户的输入信息塞到大纲结果里，留个底！
+            logging.info("尝试将用户输入信息添加到大纲结果中。")
+            input_info = {
+                "title": self.title_edit.text().strip() if self.title_edit else "获取标题失败",
+                "genre": self.genre_edit.text().strip() if self.genre_edit else "获取类型失败",
+                "theme": self.theme_edit.toPlainText().strip() if self.theme_edit else "获取主题失败",
+                "style": self.style_edit.toPlainText().strip() if self.style_edit else "获取风格失败",
+                "synopsis": self.synopsis_edit.toPlainText().strip() if self.synopsis_edit else "获取简介失败"
+            }
+            result["input_info"] = input_info
+            # 中文日志：用户输入信息成功添加！完美！
+            logging.info(f"用户输入信息已添加: {input_info}")
+        except Exception as e:
+            # 中文日志：添加用户输入信息失败了！这都能出错？
+            error_msg = f"为大纲结果添加用户输入信息时出错: {e}"
+            logging.error(error_msg, exc_info=True)
+            # 这里出错了也别打断，最坏的情况就是这部分信息缺失
+            # 可以考虑是否需要通知用户，或者记录一个更温和的错误
 
-        # 大纲成功生成啦！赶紧把模型保存起来
-        selected_model_name = self.model_combo.currentText()
-        if selected_model_name: # 确保有选中的模型才保存哦！
-            self.config_manager.save_last_selected_model(selected_model_name)
+        # 步骤4：安全地将大纲数据设置到主窗口 (这是核心操作，必须万无一失！)
+        try:
+            # 中文日志：准备把处理好的大纲交给主窗口，这可是关键一步！
+            logging.info("尝试将生成的大纲设置到主窗口。")
+            if self.main_window: # 先确保主窗口没问题
+                self.main_window.set_outline(result) # `set_outline` 方法内部也应该有自己的异常处理！
+                # 中文日志：大纲成功交给主窗口了！！
+                logging.info("大纲已成功设置到主窗口。")
+            else:
+                # 中文日志：主窗口不见了？这还怎么玩！
+                logging.error("主窗口对象不存在，无法设置大纲！")
+                self._on_error("内部错误：主窗口丢失，无法完成操作。") # 这是一个严重的内部问题
+                return
+        except Exception as e:
+            # 中文日志：把大纲交给主窗口的时候出大事了！
+            error_msg = f"将大纲设置到主窗口时发生严重错误: {e}"
+            logging.error(error_msg, exc_info=True)
+            logging.debug(f"发生错误时的大纲 result: {result}") # 记录一下出问题时的数据
+            self._on_error(f"处理大纲数据时发生内部错误: {e}。请检查日志获取详细信息。")
+            return # 这是一个关键错误，必须中断
 
-        # 更新状态栏
-        self.main_window.status_bar_manager.show_message("大纲生成完成")
+        # 步骤5：安全地更新其他UI状态和配置
+        try:
+            # 中文日志：收尾工作开始！更新按钮、保存配置
+            logging.info("开始进行收尾工作：更新按钮、保存配置、显示消息。")
+            if self.main_window and self.main_window.status_bar_manager: # 确保状态栏管理器也存在
+                 self.main_window.status_bar_manager.show_message("大纲生成完成，数据已更新！") # 给个更明确的提示
 
-        # 显示完成消息
-        QMessageBox.information(self, "生成完成", "大纲生成完成！")
+            self._update_buttons(True) # 再次确保按钮状态正确
+
+            selected_model_name = self.model_combo.currentText() if self.model_combo else None
+            if selected_model_name and self.config_manager: # 确保配置管理器也存在
+                self.config_manager.save_last_selected_model(selected_model_name)
+                # 中文日志：哼，这次的模型选择记下了！
+                logging.info(f"已保存上次选择的模型: {selected_model_name}")
+
+            # 显示完成消息
+            QMessageBox.information(self, "生成完成", "大纲已成功生成并加载！请在主窗口查看和编辑。")
+            # 中文日志：大功告成！😎
+            logging.info("大纲生成流程顺利完成！")
+
+        except Exception as e:
+            # 中文日志：收尾的时候竟然还出幺蛾子！真是没眼看！
+            error_msg = f"大纲生成后，在更新UI或配置时发生错误: {e}"
+            logging.error(error_msg, exc_info=True)
+            # 这种错误通常不致命，但需要记录
+            QMessageBox.warning(self, "提示", f"大纲已生成，但在后续处理中发生一些小问题: {e}。请检查程序日志。")
 
     @pyqtSlot(str)
-    def _on_error(self, error_message):
+    def _on_error(self, error_message: str): # 给参数加上类型提示，好习惯！
         """处理错误信号"""
         # 隐藏进度条
         self.progress_bar.setVisible(False)

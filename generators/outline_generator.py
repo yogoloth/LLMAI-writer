@@ -1,4 +1,6 @@
 import json
+import logging # 导入logging模块，方便记录日志！
+import re # 导入re模块，用正则表达式更精准地找到JSON！
 from models.ai_model import AIModel
 
 class OutlineGenerator:
@@ -473,28 +475,88 @@ class OutlineGenerator:
 
         return result_outline
 
-    def _parse_outline(self, response):
-        """解析AI生成的大纲响应"""
+    def _parse_outline(self, response: str):
+        """
+        解析AI生成的大纲响应。
+        会尝试多种方式解析JSON，并在失败时记录详细错误和原始AI输出。哼，看你往哪跑！
+
+        Args:
+            response: AI返回的原始字符串。
+
+        Returns:
+            解析后的Python对象（通常是字典），或在解析失败时返回一个包含错误信息的字典。
+        """
+        # 中文日志：记录一下，看看AI又发了什么神经！
+        logging.info(f"开始解析AI响应，原始响应长度: {len(response)}")
+        # 为了避免日志过长，可以只记录一部分，或者在debug级别记录完整响应
+        # logging.debug(f"原始AI响应内容 (前500字符): {response[:500]}...")
+
+        # 方案一：尝试直接解析整个响应，万一AI这次很乖呢？
         try:
-            # 尝试直接解析JSON
-            return json.loads(response)
-        except json.JSONDecodeError:
-            # 如果直接解析失败，尝试提取JSON部分
-            try:
-                json_start = response.find('```json')
-                if json_start != -1:
-                    json_start += 7  # 跳过```json
-                else:
-                    json_start = response.find('{')
+            parsed_data = json.loads(response)
+            logging.info("AI响应直接解析JSON成功。看来AI今天心情不错嘛！")
+            return parsed_data
+        except json.JSONDecodeError as e:
+            # 中文日志：直接解析失败了，哼，就知道AI没那么老实！
+            logging.warning(f"直接解析JSON失败: {e}。AI的鬼画符真是难懂！")
+            # logging.debug(f"直接解析失败的原始响应: {response}") # 调试时可以打开，看看AI到底说了啥
 
-                json_end = response.rfind('```')
-                if json_end != -1 and json_end > json_start:
-                    json_text = response[json_start:json_end].strip()
-                else:
-                    json_end = response.rfind('}')
-                    json_text = response[json_start:json_end+1].strip()
+        # 方案二：尝试提取 markdown 代码块中的 JSON，AI总喜欢搞这种花里胡哨的格式！
+        json_text_markdown = "" # 先给它个空值，免得出错
+        try:
+            # 使用更健壮的正则表达式来提取被 ```json 和 ``` 包围的内容，看你往哪藏！
+            match = re.search(r'```json\s*([\s\S]*?)\s*```', response, re.DOTALL)
+            if match:
+                json_text_markdown = match.group(1).strip()
+                # 中文日志：找到了被```json ... ```包起来的东西，让我看看是不是宝贝！
+                logging.info("尝试从 '```json ... ```' 代码块中提取并解析JSON。")
+                parsed_data = json.loads(json_text_markdown)
+                # 中文日志：成功从代码块里掏出来了！算你识相！
+                logging.info("从 '```json ... ```' 代码块中解析JSON成功。")
+                return parsed_data
+            else:
+                # 中文日志：没找到```json ... ```这种标记，AI又在搞什么飞机？
+                logging.warning("在响应中未找到 '```json ... ```' 代码块。")
+        except json.JSONDecodeError as e:
+            # 中文日志：从代码块里掏出来的也不是好东西，解析失败！气死我了！
+            logging.warning(f"从 '```json ... ```' 代码块中解析JSON失败: {e}。这AI给的都是些啥玩意儿！")
+            # logging.debug(f"从代码块提取但解析失败的JSON文本: {json_text_markdown}") # 调试时可以看看AI写的JSON有多烂
+        except Exception as e_generic: # 捕获其他可能的异常，比如 re 模块的错误
+            logging.error(f"尝试从 '```json ... ```' 代码块提取或解析时发生预料之外的错误: {e_generic}")
 
-                return json.loads(json_text)
-            except (json.JSONDecodeError, ValueError):
-                # 如果仍然失败，返回原始响应
-                return {"error": "无法解析响应", "raw_response": response}
+
+        # 方案三：尝试查找第一个 '{' 和最后一个 '}' 之间的内容，死马当活马医了！
+        json_text_substring = "" # 先给它个空值
+        try:
+            start_index = response.find('{')
+            end_index = response.rfind('}')
+            if start_index != -1 and end_index != -1 and end_index > start_index:
+                json_text_substring = response[start_index : end_index + 1].strip()
+                # 中文日志：大海捞针，看看能不能从'{'和'}'之间找到点啥
+                logging.info("尝试解析从第一个 '{' 到最后一个 '}' 的子字符串作为JSON。")
+                parsed_data = json.loads(json_text_substring)
+                # 中文日志：嘿，还真捞着了！勉强能用！
+                logging.info("从子字符串 '{...}' 解析JSON成功。")
+                return parsed_data
+            else:
+                # 中文日志：连'{'和'}'都凑不齐一对，AI这是彻底摆烂了吗？
+                logging.warning("在响应中未找到有效的 '{' 和 '}' 来构成JSON对象。")
+        except json.JSONDecodeError as e:
+            # 中文日志：就算是'{'和'}'之间的东西也是一坨翔，解析失败！
+            logging.warning(f"从子字符串 '{{...}}' 解析JSON失败: {e}。AI你是不是故意的！")
+            # logging.debug(f"从子字符串提取但解析失败的JSON文本: {json_text_substring}")
+        except Exception as e_generic: # 捕获其他可能的异常
+            logging.error(f"尝试从 '{{...}}' 子字符串提取或解析时发生预料之外的错误: {e_generic}")
+
+
+        # 如果所有尝试都失败了，只能认栽！
+        error_message = "所有JSON解析尝试均失败。AI今天大概是没吃药。"
+        # 中文日志：彻底没救了，AI给的就是一堆乱码！
+        logging.error(error_message)
+        # logging.error(f"最终无法解析的原始AI响应: {response}") # 记录完整的原始响应
+        # 返回一个标准的错误结构，包含错误信息和原始响应，方便上层处理，哼！
+        return {
+            "error": error_message, # 错误摘要，给机器看的
+            "message": "AI返回的格式不正确，无法解析为有效的大纲结构。请检查AI的输出或提示词。", # 给用户看的提示
+            "raw_response": response # 附带原始响应，用于排查问题！
+        }
