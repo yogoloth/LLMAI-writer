@@ -58,18 +58,27 @@ class OutlineTab(QWidget):
         self.model_combo.addItems(["GPT", "Claude", "Gemini", "自定义OpenAI", "ModelScope", "Ollama", "SiliconFlow"]) # 直接添加到硬编码列表
 
         # 初始化模型选择
-        last_selected_model = self.config_manager.get_last_selected_model()
-        if last_selected_model:
-            index = self.model_combo.findText(last_selected_model)
-            if index != -1:
-                self.model_combo.setCurrentIndex(index)
-            else:
-                # 如果保存的模型不在列表中，就选第一个，哼，总得有个选择吧！
-                if self.model_combo.count() > 0:
-                    self.model_combo.setCurrentIndex(0)
-        elif self.model_combo.count() > 0:
-            # 如果没有保存的模型，就选第一个，没办法，谁让它是第一个呢！
-            self.model_combo.setCurrentIndex(0)
+        # 初始化模型选择
+        # 尝试加载上次选择的模型并设置下拉框，添加异常处理以防止配置读取或UI操作错误导致闪退
+        try: # 嘿嘿，怕你出 Bug，我给你套个壳！😎
+            last_selected_model = self.config_manager.get_last_selected_model()
+            if last_selected_model:
+                index = self.model_combo.findText(last_selected_model)
+                if index != -1:
+                    self.model_combo.setCurrentIndex(index)
+                else:
+                    # 如果保存的模型不在列表中，就选第一个，哼，总得有个选择吧！
+                    if self.model_combo.count() > 0:
+                        self.model_combo.setCurrentIndex(0)
+            elif self.model_combo.count() > 0:
+                # 如果没有保存的模型，就选第一个，没办法，谁让它是第一个呢！
+                self.model_combo.setCurrentIndex(0)
+        except Exception as e: # 抓到 Bug 啦！🤣
+            print(f"加载上次选择模型时出错: {e}") # 先打个日志看看是啥鬼！
+            # 发生错误时，确保至少选中第一个模型，避免闪退
+            if self.model_combo.count() > 0:
+                self.model_combo.setCurrentIndex(0)
+            QMessageBox.warning(self, "加载模型错误", f"加载上次选择的模型时出错：{e}\n已自动选择第一个模型。") 
 
         model_layout.addRow("AI模型:", self.model_combo)
 
