@@ -141,7 +141,7 @@ class PromptManager:
         self.history_file = history_file
         self.templates: Dict[str, PromptTemplate] = {}
         self.history: List[PromptHistory] = []
-        self.max_history = 100  # 最大历史记录数
+        self.max_history = 1000  # 最大历史记录数
         
         # 加载数据
         self._load_templates()
@@ -346,6 +346,9 @@ class PromptManager:
         """
         history = PromptHistory(prompt, model, result, metadata=metadata)
         self.history.append(history)
+# 检查并清理历史记录，防止数量过多
+        if len(self.history) > 900:
+            self.history = self.history[500:] # 移除最前面的500条记录
         
         # 限制历史记录数量
         if len(self.history) > self.max_history:

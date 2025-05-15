@@ -416,8 +416,28 @@ class OutlineGenerator:
             result_outline['synopsis'] = generated_outline['synopsis']
         if 'worldbuilding' in generated_outline and generated_outline['worldbuilding']:
             result_outline['worldbuilding'] = generated_outline['worldbuilding']
+        # 合并角色数据 - 只添加新生成的角色，不替换已有角色
         if 'characters' in generated_outline and generated_outline['characters']:
-            result_outline['characters'] = generated_outline['characters']
+            if not result_outline.get('characters'):
+                # 如果结果大纲中没有角色数据，直接使用新生成的角色数据
+                result_outline['characters'] = generated_outline['characters']
+            else:
+                # 如果结果大纲中已有角色数据，合并新生成的角色数据
+                existing_characters = result_outline.get('characters', [])
+                new_characters = generated_outline.get('characters', [])
+
+                # 获取已有角色的名称列表，用于检查重复
+                existing_names = [char.get('name', '') for char in existing_characters]
+
+                # 添加不重复的新角色
+                for new_char in new_characters:
+                    new_name = new_char.get('name', '')
+                    if new_name and new_name not in existing_names:
+                        existing_characters.append(new_char)
+                        existing_names.append(new_name)
+
+                # 更新角色数据
+                result_outline['characters'] = existing_characters
 
         # 最终排序卷和章节，确保顺序正确
         if 'volumes' in result_outline and result_outline['volumes']:

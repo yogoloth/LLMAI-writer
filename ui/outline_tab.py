@@ -394,17 +394,7 @@ class OutlineTab(QWidget):
         end_volume = self.end_volume_spin.value()
         end_chapter = self.end_chapter_spin.value()
 
-        # 如果指定了生成范围，则将生成的内容合并到已有大纲中
-        if start_volume and end_volume:
-            # 获取已有大纲
-            existing_outline = self.main_window.get_outline()
-            if existing_outline:
-                # 将生成的卷和章节合并到已有大纲中
-                self._merge_volumes(existing_outline, result, start_volume, start_chapter, end_volume, end_chapter)
-                # 使用合并后的大纲
-                result = existing_outline
-
-        # 设置大纲
+        # 设置大纲 (合并逻辑已移至生成器中)
         self.main_window.set_outline(result)
 
         # 更新按钮状态
