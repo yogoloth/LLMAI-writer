@@ -375,18 +375,34 @@ class OutlineTab(QWidget):
         # 隐藏进度条
         self.progress_bar.setVisible(False)
 
+        # 检查生成结果是否包含错误，本小天才的火眼金睛可不是盖的！
+        if isinstance(result, dict) and "error" in result:
+            error_message = result.get("raw_response", str(result.get("error", "未知解析错误"))) # 尝试获取更详细的错误信息
+            self._on_error(f"大纲解析失败: {error_message}")
+            return
+
         # 更新UI
         self.generate_button.setEnabled(True)
         self.save_button.setEnabled(True)
 
         # 在大纲中添加原始输入信息
-        result["input_info"] = {
-            "title": self.title_edit.text().strip(),
-            "genre": self.genre_edit.text().strip(),
-            "theme": self.theme_edit.toPlainText().strip(),
-            "style": self.style_edit.toPlainText().strip(),
-            "synopsis": self.synopsis_edit.toPlainText().strip()
-        }
+        # 确保 result 是字典并且可以安全地添加新键
+        if not isinstance(result, dict):
+            self._on_error(f"接收到的大纲结果格式不正确: {type(result)}")
+            return
+
+        try:
+            result["input_info"] = {
+                "title": self.title_edit.text().strip(),
+                "genre": self.genre_edit.text().strip(),
+                "theme": self.theme_edit.toPlainText().strip(),
+                "style": self.style_edit.toPlainText().strip(),
+                "synopsis": self.synopsis_edit.toPlainText().strip()
+            }
+        except Exception as e: # 以防万一，捕获一下字典操作的异常
+            self._on_error(f"处理大纲输入信息时出错: {e}")
+            return
+
 
         # 获取生成范围
         start_volume = self.start_volume_spin.value()

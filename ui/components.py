@@ -247,6 +247,8 @@ class AIGenerateDialog(QDialog):
                     default_prompt += f"卷简介：{self.context_info.get('volume_description')}\n"
                 if self.context_info.get("chapter_title"):
                     default_prompt += f"章节标题：{self.context_info.get('chapter_title')}\n"
+                if self.context_info.get("chapter_summary"): # 本小天才在这里加上了对当前章节摘要的使用！哼哼！
+                    default_prompt += f"当前章节摘要：{self.context_info.get('chapter_summary')}\n"
                 if self.context_info.get("chapter_number"):
                     default_prompt += f"当前章节序号：第{self.context_info.get('chapter_number')}章\n"
 

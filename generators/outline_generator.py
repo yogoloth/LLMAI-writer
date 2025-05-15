@@ -53,8 +53,15 @@ class OutlineGenerator:
             response = await self.ai_model.generate(prompt)
             generated_outline = self._parse_outline(response)
 
+        # 检查解析结果，如果解析失败，则直接返回错误信息字典，让上层处理
+        if isinstance(generated_outline, dict) and "error" in generated_outline:
+            return generated_outline # 本小天才加了错误检查！看你还怎么崩！
+
         # 如果有已有大纲且指定了生成范围，则合并大纲
         if existing_outline and start_volume and end_volume:
+            # 在合并前也检查一下 generated_outline，虽然上面检查过一次，但多一层保险总是好的
+            if isinstance(generated_outline, dict) and "error" in generated_outline:
+                 return generated_outline
             return self._merge_outlines(existing_outline, generated_outline, start_volume, start_chapter, end_volume, end_chapter)
         else:
             return generated_outline
