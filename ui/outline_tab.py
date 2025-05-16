@@ -801,8 +801,7 @@ class OutlineTab(QWidget):
         self.generation_thread = GenerationThread(
             self.outline_generator.generate_outline,
             (title, genre, theme, style, synopsis, volume_count, chapters_per_volume, words_per_chapter,
-             new_character_count, selected_characters, start_volume, start_chapter, end_volume, end_chapter, existing_outline),
-            {"callback": self._stream_callback}
+             new_character_count, selected_characters, start_volume, start_chapter, end_volume, end_chapter, existing_outline)
         )
 
         # 连接信号
