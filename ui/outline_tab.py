@@ -741,8 +741,20 @@ class OutlineTab(QWidget):
         logging.info(f"{self.LOG_PREFIX} generate_outline: 解析后的AI模型类型(内部): '{model_type}'")
         try:
             model = self.main_window.get_model(model_type)
+            if model is None: # 确保在成功获取模型后进行检查
+                # 中文日志：模型获取成功，但结果是空的！这可不行！
+                logging.error(f"{self.LOG_PREFIX} generate_outline: AI模型实例 '{model_type}' 获取成功，但返回值为 None。")
+                QMessageBox.warning(self, "模型错误", f"获取AI模型 '{model_type_display}' 失败，模型实例为空。\n请检查相关配置或程序日志。")
+                return
         except ValueError as e:
-            QMessageBox.warning(self, "模型错误", str(e))
+            # 中文日志：捕获到 ValueError，通常是配置数值问题。
+            logging.error(f"{self.LOG_PREFIX} generate_outline: 获取AI模型 '{model_type}' 时发生 ValueError: {e}", exc_info=True)
+            QMessageBox.warning(self, "模型配置错误", f"获取AI模型 '{model_type_display}' 时发生配置错误：\n{e}\n请检查模型相关配置数值是否正确。")
+            return
+        except Exception as e:
+            # 中文日志：捕获到其他未知异常，这问题可能比较严重！
+            logging.error(f"{self.LOG_PREFIX} generate_outline: 获取AI模型 '{model_type}' 时发生未知错误: {e}", exc_info=True)
+            QMessageBox.critical(self, "严重错误", f"获取AI模型 '{model_type_display}' 时发生严重错误：\n{e}\n请检查您的API Key、网络连接或查看程序日志获取详细信息。")
             return
 
         # 温度设置已移除
