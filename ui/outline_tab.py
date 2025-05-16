@@ -21,8 +21,11 @@ from ui.character_selector_dialog import CharacterSelectorDialog
 class OutlineTab(QWidget):
     """大纲生成标签页"""
 
+    LOG_PREFIX = "[DEBUG_OUTLINE_TAB]" # 日志前缀，让你一眼就认出我！
+
     def __init__(self, main_window):
         super().__init__()
+        logging.info(f"{self.LOG_PREFIX} OutlineTab 开始初始化...")
 
         self.main_window = main_window
         self.config_manager = self.main_window.config_manager # 获取配置管理器，哼哼，看你往哪跑！
@@ -36,6 +39,7 @@ class OutlineTab(QWidget):
 
         # 初始化UI
         self._init_ui()
+        logging.info(f"{self.LOG_PREFIX} OutlineTab 初始化完成。")
 
     def _init_ui(self):
         """初始化UI"""
@@ -377,7 +381,8 @@ class OutlineTab(QWidget):
         这里会进行严格的检查和异常处理，确保UI更新的稳健性。哼，休想在这里搞鬼！
         """
         # 中文日志：大纲生成线程终于完事了！
-        logging.info("Outline generation thread finished. Processing result.")
+        logging.info(f"{self.LOG_PREFIX} _on_finished: 收到生成结果。原始数据: {result}")
+        logging.info("Outline generation thread finished. Processing result.") # 保留原有英文日志，万一别处依赖呢
 
         try:
             # 隐藏进度条，不管成功失败，这玩意儿都该消失了！
@@ -385,15 +390,15 @@ class OutlineTab(QWidget):
                 self.progress_bar.setVisible(False)
         except Exception as e:
             # 中文日志：隐藏个进度条都能出错？真是活久见！
-            logging.error(f"隐藏进度条时发生异常: {e}", exc_info=True)
+            logging.error(f"{self.LOG_PREFIX} _on_finished: 隐藏进度条时发生异常: {e}", exc_info=True)
             # 即使这里出错，也尝试继续，毕竟不是核心逻辑
 
         # 步骤1：检查核心结果的有效性，这是最重要的一关！
         if not isinstance(result, dict):
             # 中文日志：收到的这是个啥玩意儿？连个字典都不是！直接打回去！
             error_msg = f"大纲生成结果类型不正确，期望是字典，实际是 {type(result)}。"
-            logging.error(error_msg)
-            logging.debug(f"错误的 result 内容: {result}") # 记录一下这个奇葩的result
+            logging.error(f"{self.LOG_PREFIX} _on_finished: {error_msg}")
+            logging.debug(f"{self.LOG_PREFIX} _on_finished: 错误的 result 内容: {result}") # 记录一下这个奇葩的result
             self._on_error(error_msg)
             return
 
@@ -402,29 +407,31 @@ class OutlineTab(QWidget):
             raw_response_preview = str(result.get("raw_response", ""))[:200] # 只看前200个字符，免得日志太长
             error_detail = result.get("message", str(result.get("error", "未知解析错误")))
             full_error_message = f"大纲解析失败或生成器返回错误: {error_detail} (部分原始响应: {raw_response_preview}...)"
-            logging.error(full_error_message)
-            logging.debug(f"包含错误的完整 result: {result}") # 记录完整的错误信息
+            logging.error(f"{self.LOG_PREFIX} _on_finished: {full_error_message}")
+            logging.debug(f"{self.LOG_PREFIX} _on_finished: 包含错误的完整 result: {result}") # 记录完整的错误信息
             self._on_error(full_error_message)
             return
 
         # 中文日志：初步检查通过，result是个字典，而且没有直接的error标记。继续深入检查！
-        logging.info("初步检查通过，result是一个没有直接error标记的字典。")
+        logging.info(f"{self.LOG_PREFIX} _on_finished: 初步检查通过，result是一个没有直接error标记的字典。")
 
         # 步骤2：安全地更新UI控件状态
         try:
             if self.generate_button: # 先检查按钮是否存在
+                logging.info(f"{self.LOG_PREFIX} _on_finished: 更新UI - generate_button.setEnabled(True)")
                 self.generate_button.setEnabled(True)
             if self.save_button: # 清空输出按钮
+                logging.info(f"{self.LOG_PREFIX} _on_finished: 更新UI - save_button.setEnabled(True)")
                 self.save_button.setEnabled(True) # 只要有结果（不是直接错误），就允许清空
         except Exception as e:
             # 中文日志：更新按钮状态都能出错？这界面是纸糊的吗！
-            logging.error(f"更新按钮状态时发生异常: {e}", exc_info=True)
+            logging.error(f"{self.LOG_PREFIX} _on_finished: 更新按钮状态时发生异常: {e}", exc_info=True)
             # 这里出错了也别停，尝试继续
 
         # 步骤3：安全地将用户输入信息添加到大纲结果中
         try:
             # 中文日志：准备把用户的输入信息塞到大纲结果里，留个底！
-            logging.info("尝试将用户输入信息添加到大纲结果中。")
+            logging.info(f"{self.LOG_PREFIX} _on_finished: 尝试将用户输入信息添加到大纲结果中。")
             input_info = {
                 "title": self.title_edit.text().strip() if self.title_edit else "获取标题失败",
                 "genre": self.genre_edit.text().strip() if self.genre_edit else "获取类型失败",
@@ -434,22 +441,23 @@ class OutlineTab(QWidget):
             }
             result["input_info"] = input_info
             # 中文日志：用户输入信息成功添加！完美！
-            logging.info(f"用户输入信息已添加: {input_info}")
+            logging.info(f"{self.LOG_PREFIX} _on_finished: 用户输入信息已添加: {input_info}")
         except Exception as e:
             # 中文日志：添加用户输入信息失败了！这都能出错？
             error_msg = f"为大纲结果添加用户输入信息时出错: {e}"
-            logging.error(error_msg, exc_info=True)
+            logging.error(f"{self.LOG_PREFIX} _on_finished: {error_msg}", exc_info=True)
             # 这里出错了也别打断，最坏的情况就是这部分信息缺失
             # 可以考虑是否需要通知用户，或者记录一个更温和的错误
 
         # 步骤4：安全地将大纲数据设置到主窗口 (这是核心操作，必须万无一失！)
         try:
             # 中文日志：准备把处理好的大纲交给主窗口，这可是关键一步！
-            logging.info("尝试将生成的大纲设置到主窗口。")
+            logging.info(f"{self.LOG_PREFIX} _on_finished: 尝试将生成的大纲设置到主窗口。")
+            logging.info(f"{self.LOG_PREFIX} _on_finished: 将要保存到主窗口的大纲数据: {result}") # 在调用 novel_data_manager.set_outline() 之前
             if self.main_window: # 先确保主窗口没问题
                 self.main_window.set_outline(result) # `set_outline` 方法内部也应该有自己的异常处理！
                 # 中文日志：大纲成功交给主窗口了！！
-                logging.info("大纲已成功设置到主窗口。")
+                logging.info(f"{self.LOG_PREFIX} _on_finished: 大纲已成功设置到主窗口。")
             else:
                 # 中文日志：主窗口不见了？这还怎么玩！
                 logging.error("主窗口对象不存在，无法设置大纲！")
@@ -707,12 +715,30 @@ class OutlineTab(QWidget):
         new_character_count = self.new_character_count_spin.value()
         selected_characters = self.selected_characters
 
+        # 获取模型选择
+        model_type_display = self.model_combo.currentText() # 获取显示的模型名称
+
+        logging.info(f"{self.LOG_PREFIX} generate_outline: 开始生成大纲。")
+        logging.info(f"{self.LOG_PREFIX} generate_outline: 用户输入 - 小说标题: '{title}'")
+        logging.info(f"{self.LOG_PREFIX} generate_outline: 用户输入 - 小说类型: '{genre}'")
+        logging.info(f"{self.LOG_PREFIX} generate_outline: 用户输入 - 小说主题: '{theme}'")
+        logging.info(f"{self.LOG_PREFIX} generate_outline: 用户输入 - 小说风格: '{style}'")
+        logging.info(f"{self.LOG_PREFIX} generate_outline: 用户输入 - 小说简介: '{synopsis}'")
+        logging.info(f"{self.LOG_PREFIX} generate_outline: 用户输入 - 卷数: {volume_count}")
+        logging.info(f"{self.LOG_PREFIX} generate_outline: 用户输入 - 每卷章节数: {chapters_per_volume}")
+        logging.info(f"{self.LOG_PREFIX} generate_outline: 用户输入 - 每章字数: {words_per_chapter}")
+        logging.info(f"{self.LOG_PREFIX} generate_outline: 用户输入 - 新生成角色数量: {new_character_count}")
+        logging.info(f"{self.LOG_PREFIX} generate_outline: 用户输入 - 已选角色: {len(selected_characters)} 个, {selected_characters}")
+        logging.info(f"{self.LOG_PREFIX} generate_outline: 选择的AI模型(显示名): '{model_type_display}'")
+
+
         if not theme:
             QMessageBox.warning(self, "输入错误", "请输入小说主题")
             return
 
         # 获取模型
-        model_type = self._get_model_type()
+        model_type = self._get_model_type() # 这个是内部代号
+        logging.info(f"{self.LOG_PREFIX} generate_outline: 解析后的AI模型类型(内部): '{model_type}'")
         try:
             model = self.main_window.get_model(model_type)
         except ValueError as e:
@@ -741,8 +767,14 @@ class OutlineTab(QWidget):
         if template_name and template_name != "选择提示词模板":
             template = self.prompt_manager.get_template(template_name)
             if template:
+                logging.info(f"{self.LOG_PREFIX} generate_outline: 使用提示词模板: '{template_name}'")
                 # 记录使用模板
                 self.main_window.status_bar_manager.show_message(f"正在使用模板 '{template_name}' 生成大纲...")
+            else:
+                logging.warning(f"{self.LOG_PREFIX} generate_outline: 选择了模板 '{template_name}' 但未找到该模板实例。")
+        else:
+            logging.info(f"{self.LOG_PREFIX} generate_outline: 未使用提示词模板。")
+
 
         # 获取生成范围
         start_volume = self.start_volume_spin.value()

@@ -5,6 +5,7 @@ from models.ai_model import AIModel
 
 class OutlineGenerator:
     """小说大纲生成器"""
+    LOG_PREFIX = "[DEBUG_OUTLINE_GENERATOR]" # 日志前缀，哼，休想逃过我的眼睛！
 
     def __init__(self, ai_model: AIModel, config_manager):
         """
@@ -16,6 +17,7 @@ class OutlineGenerator:
         """
         self.ai_model = ai_model
         self.config_manager = config_manager
+        logging.info(f"{self.LOG_PREFIX} OutlineGenerator 已创建。接收到的参数 - ai_model: {type(ai_model)}, config_manager: {type(config_manager)}")
 
     async def generate_outline(self, title, genre, theme, style, synopsis, volume_count, chapters_per_volume, words_per_chapter, new_character_count, selected_characters=None, start_volume=None, start_chapter=None, end_volume=None, end_chapter=None, existing_outline=None, callback=None):
         """
@@ -42,17 +44,24 @@ class OutlineGenerator:
         Returns:
             生成的大纲（JSON格式）
         """
+        logging.info(f"{self.LOG_PREFIX} generate_outline: 核心生成逻辑开始。")
+        logging.info(f"{self.LOG_PREFIX} generate_outline: 参数 - title='{title}', genre='{genre}', theme='{theme}', style='{style}', synopsis (len)='{len(synopsis) if synopsis else 0}', volume_count={volume_count}, chapters_per_volume={chapters_per_volume}, words_per_chapter={words_per_chapter}, new_character_count={new_character_count}, selected_characters (count)={len(selected_characters) if selected_characters else 0}, start_volume={start_volume}, start_chapter={start_chapter}, end_volume={end_volume}, end_chapter={end_chapter}, existing_outline (present)={existing_outline is not None}")
+
         prompt = self._create_outline_prompt(title, genre, theme, style, synopsis, volume_count, chapters_per_volume, words_per_chapter, new_character_count, selected_characters, start_volume, start_chapter, end_volume, end_chapter, existing_outline)
 
         if callback:
             # 流式生成
+            logging.info(f"{self.LOG_PREFIX} generate_outline: 开始调用 AI 模型 (generate_stream) 进行流式生成。")
             full_response = ""
             async for chunk in self.ai_model.generate_stream(prompt, callback):
                 full_response += chunk
+            logging.info(f"{self.LOG_PREFIX} generate_outline: AI 模型 (generate_stream) 流式生成结束。响应长度: {len(full_response)}")
             generated_outline = self._parse_outline(full_response)
         else:
             # 非流式生成
+            logging.info(f"{self.LOG_PREFIX} generate_outline: 开始调用 AI 模型 (generate) 进行非流式生成。")
             response = await self.ai_model.generate(prompt)
+            logging.info(f"{self.LOG_PREFIX} generate_outline: AI 模型 (generate) 非流式生成结束。响应长度: {len(response)}")
             generated_outline = self._parse_outline(response)
 
         # 检查解析结果，如果解析失败，则直接返回错误信息字典，让上层处理
@@ -94,6 +103,7 @@ class OutlineGenerator:
 
     def _create_outline_prompt(self, title, genre, theme, style, synopsis, volume_count, chapters_per_volume, words_per_chapter, new_character_count, selected_characters=None, start_volume=None, start_chapter=None, end_volume=None, end_chapter=None, existing_outline=None):
         """创建大纲生成的提示词"""
+        logging.info(f"{self.LOG_PREFIX} _create_outline_prompt: 开始创建大纲生成提示词。")
         # 构建提示词基础部分
         if start_volume and end_volume:
             prompt = f"""
@@ -283,6 +293,7 @@ class OutlineGenerator:
         请只返回JSON格式的内容，不要包含其他解释或说明。
         """
 
+        logging.info(f"{self.LOG_PREFIX} _create_outline_prompt: 生成的完整 Prompt 内容:\n{prompt}")
         return prompt
 
     def _create_optimization_prompt(self, outline):
@@ -487,19 +498,21 @@ class OutlineGenerator:
             解析后的Python对象（通常是字典），或在解析失败时返回一个包含错误信息的字典。
         """
         # 中文日志：记录一下，看看AI又发了什么神经！
-        logging.info(f"开始解析AI响应，原始响应长度: {len(response)}")
+        logging.info(f"{self.LOG_PREFIX} _parse_outline: 开始解析AI响应。原始响应长度: {len(response)}")
         # 为了避免日志过长，可以只记录一部分，或者在debug级别记录完整响应
-        # logging.debug(f"原始AI响应内容 (前500字符): {response[:500]}...")
+        # logging.debug(f"{self.LOG_PREFIX} _parse_outline: 原始AI响应内容 (前500字符): {response[:500]}...")
 
         # 方案一：尝试直接解析整个响应，万一AI这次很乖呢？
         try:
             parsed_data = json.loads(response)
-            logging.info("AI响应直接解析JSON成功。看来AI今天心情不错嘛！")
+            logging.info(f"{self.LOG_PREFIX} _parse_outline: AI响应直接解析JSON成功。看来AI今天心情不错嘛！解析后数据摘要 (类型): {type(parsed_data)}")
+            if isinstance(parsed_data, dict):
+                logging.info(f"{self.LOG_PREFIX} _parse_outline: 解析后数据键: {list(parsed_data.keys())}")
             return parsed_data
         except json.JSONDecodeError as e:
             # 中文日志：直接解析失败了，哼，就知道AI没那么老实！
-            logging.warning(f"直接解析JSON失败: {e}。AI的鬼画符真是难懂！")
-            # logging.debug(f"直接解析失败的原始响应: {response}") # 调试时可以打开，看看AI到底说了啥
+            logging.warning(f"{self.LOG_PREFIX} _parse_outline: 直接解析JSON失败: {e}。AI的鬼画符真是难懂！")
+            # logging.debug(f"{self.LOG_PREFIX} _parse_outline: 直接解析失败的原始响应: {response}") # 调试时可以打开，看看AI到底说了啥
 
         # 方案二：尝试提取 markdown 代码块中的 JSON，AI总喜欢搞这种花里胡哨的格式！
         json_text_markdown = "" # 先给它个空值，免得出错
@@ -509,20 +522,22 @@ class OutlineGenerator:
             if match:
                 json_text_markdown = match.group(1).strip()
                 # 中文日志：找到了被```json ... ```包起来的东西，让我看看是不是宝贝！
-                logging.info("尝试从 '```json ... ```' 代码块中提取并解析JSON。")
+                logging.info(f"{self.LOG_PREFIX} _parse_outline: 尝试从 '```json ... ```' 代码块中提取并解析JSON。")
                 parsed_data = json.loads(json_text_markdown)
                 # 中文日志：成功从代码块里掏出来了！算你识相！
-                logging.info("从 '```json ... ```' 代码块中解析JSON成功。")
+                logging.info(f"{self.LOG_PREFIX} _parse_outline: 从 '```json ... ```' 代码块中解析JSON成功。解析后数据摘要 (类型): {type(parsed_data)}")
+                if isinstance(parsed_data, dict):
+                    logging.info(f"{self.LOG_PREFIX} _parse_outline: 解析后数据键: {list(parsed_data.keys())}")
                 return parsed_data
             else:
                 # 中文日志：没找到```json ... ```这种标记，AI又在搞什么飞机？
-                logging.warning("在响应中未找到 '```json ... ```' 代码块。")
+                logging.warning(f"{self.LOG_PREFIX} _parse_outline: 在响应中未找到 '```json ... ```' 代码块。")
         except json.JSONDecodeError as e:
             # 中文日志：从代码块里掏出来的也不是好东西，解析失败！气死我了！
-            logging.warning(f"从 '```json ... ```' 代码块中解析JSON失败: {e}。这AI给的都是些啥玩意儿！")
-            # logging.debug(f"从代码块提取但解析失败的JSON文本: {json_text_markdown}") # 调试时可以看看AI写的JSON有多烂
+            logging.warning(f"{self.LOG_PREFIX} _parse_outline: 从 '```json ... ```' 代码块中解析JSON失败: {e}。这AI给的都是些啥玩意儿！")
+            # logging.debug(f"{self.LOG_PREFIX} _parse_outline: 从代码块提取但解析失败的JSON文本: {json_text_markdown}") # 调试时可以看看AI写的JSON有多烂
         except Exception as e_generic: # 捕获其他可能的异常，比如 re 模块的错误
-            logging.error(f"尝试从 '```json ... ```' 代码块提取或解析时发生预料之外的错误: {e_generic}")
+            logging.error(f"{self.LOG_PREFIX} _parse_outline: 尝试从 '```json ... ```' 代码块提取或解析时发生预料之外的错误: {e_generic}")
 
 
         # 方案三：尝试查找第一个 '{' 和最后一个 '}' 之间的内容，死马当活马医了！
@@ -533,27 +548,29 @@ class OutlineGenerator:
             if start_index != -1 and end_index != -1 and end_index > start_index:
                 json_text_substring = response[start_index : end_index + 1].strip()
                 # 中文日志：大海捞针，看看能不能从'{'和'}'之间找到点啥
-                logging.info("尝试解析从第一个 '{' 到最后一个 '}' 的子字符串作为JSON。")
+                logging.info(f"{self.LOG_PREFIX} _parse_outline: 尝试解析从第一个 '{{' 到最后一个 '}}' 的子字符串作为JSON。")
                 parsed_data = json.loads(json_text_substring)
                 # 中文日志：嘿，还真捞着了！勉强能用！
-                logging.info("从子字符串 '{...}' 解析JSON成功。")
+                logging.info(f"{self.LOG_PREFIX} _parse_outline: 从子字符串 '{{...}}' 解析JSON成功。解析后数据摘要 (类型): {type(parsed_data)}")
+                if isinstance(parsed_data, dict):
+                    logging.info(f"{self.LOG_PREFIX} _parse_outline: 解析后数据键: {list(parsed_data.keys())}")
                 return parsed_data
             else:
                 # 中文日志：连'{'和'}'都凑不齐一对，AI这是彻底摆烂了吗？
-                logging.warning("在响应中未找到有效的 '{' 和 '}' 来构成JSON对象。")
+                logging.warning(f"{self.LOG_PREFIX} _parse_outline: 在响应中未找到有效的 '{{' 和 '}}' 来构成JSON对象。")
         except json.JSONDecodeError as e:
             # 中文日志：就算是'{'和'}'之间的东西也是一坨翔，解析失败！
-            logging.warning(f"从子字符串 '{{...}}' 解析JSON失败: {e}。AI你是不是故意的！")
-            # logging.debug(f"从子字符串提取但解析失败的JSON文本: {json_text_substring}")
+            logging.warning(f"{self.LOG_PREFIX} _parse_outline: 从子字符串 '{{...}}' 解析JSON失败: {e}。AI你是不是故意的！")
+            # logging.debug(f"{self.LOG_PREFIX} _parse_outline: 从子字符串提取但解析失败的JSON文本: {json_text_substring}")
         except Exception as e_generic: # 捕获其他可能的异常
-            logging.error(f"尝试从 '{{...}}' 子字符串提取或解析时发生预料之外的错误: {e_generic}")
+            logging.error(f"{self.LOG_PREFIX} _parse_outline: 尝试从 '{{...}}' 子字符串提取或解析时发生预料之外的错误: {e_generic}")
 
 
         # 如果所有尝试都失败了，只能认栽！
         error_message = "所有JSON解析尝试均失败。AI今天大概是没吃药。"
         # 中文日志：彻底没救了，AI给的就是一堆乱码！
-        logging.error(error_message)
-        # logging.error(f"最终无法解析的原始AI响应: {response}") # 记录完整的原始响应
+        logging.error(f"{self.LOG_PREFIX} _parse_outline: {error_message} 原始响应 (前500字符): {response[:500]}...") # 记录部分原始响应避免日志过长
+        # logging.error(f"{self.LOG_PREFIX} _parse_outline: 最终无法解析的原始AI响应: {response}") # 记录完整的原始响应
         # 返回一个标准的错误结构，包含错误信息和原始响应，方便上层处理，哼！
         return {
             "error": error_message, # 错误摘要，给机器看的
