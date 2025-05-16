@@ -53,9 +53,39 @@ class OutlineGenerator:
             # 流式生成
             logging.info(f"{self.LOG_PREFIX} generate_outline: 开始调用 AI 模型 (generate_stream) 进行流式生成。")
             full_response = ""
+            # 中文日志：开始处理流式数据，看AI又整什么幺蛾子！
+            logging.info(f"{self.LOG_PREFIX} generate_outline: 开始接收并处理流式数据块...")
             async for chunk in self.ai_model.generate_stream(prompt, callback):
-                full_response += chunk
-            logging.info(f"{self.LOG_PREFIX} generate_outline: AI 模型 (generate_stream) 流式生成结束。响应长度: {len(full_response)}")
+                # 中文日志：新的一块来了！
+                logging.info(f"{self.LOG_PREFIX} generate_outline: 正在处理新的流式数据块...")
+                try:
+                    # 中文日志：让我康康这块里面是啥！
+                    logging.info(f"{self.LOG_PREFIX} generate_outline: 尝试从 chunk 中获取 text...")
+                    # 假设 chunk 是一个对象，并且文本内容在 chunk.text 中
+                    # 如果您的 AIModel.generate_stream 直接返回字符串块，则不需要 .text
+                    text_to_add = chunk.text if hasattr(chunk, 'text') else str(chunk)
+                    logging.info(f"{self.LOG_PREFIX} generate_outline: 成功获取 chunk 内容 (前100字符): '{text_to_add[:100]}{'...' if len(text_to_add) > 100 else ''}'")
+                    full_response += text_to_add
+                except AttributeError as e_attr:
+                    logging.error(f"{self.LOG_PREFIX} generate_outline: 尝试访问 chunk.text 失败，chunk 可能没有 text 属性。错误: {e_attr}, chunk 类型: {type(chunk)}, chunk 内容: {str(chunk)[:200]}{'...' if len(str(chunk)) > 200 else ''}")
+                    # 如果 chunk 本身就是字符串，尝试直接使用
+                    if isinstance(chunk, str):
+                        logging.info(f"{self.LOG_PREFIX} generate_outline: chunk 本身是字符串，直接拼接。")
+                        full_response += chunk
+                    else:
+                        logging.warning(f"{self.LOG_PREFIX} generate_outline: 无法从 chunk 获取文本内容，跳过此 chunk。")
+                    continue # 继续处理下一个块
+                except Exception as e_chunk:
+                    # 中文日志：可恶！处理这块的时候出错了！
+                    logging.error(f"{self.LOG_PREFIX} generate_outline: 处理流式数据块时发生严重错误！错误详情: {e_chunk}, 当前 chunk 内容 (部分): {str(chunk)[:200]}{'...' if len(str(chunk)) > 200 else ''}")
+                    # 根据您的策略，可以选择 continue 或 break
+                    # logging.info(f"{self.LOG_PREFIX} generate_outline: 选择继续处理下一个数据块。")
+                    # continue
+                    logging.warning(f"{self.LOG_PREFIX} generate_outline: 发生错误，终止流式数据处理。")
+                    break # 发生错误，终止循环
+            logging.info(f"{self.LOG_PREFIX} generate_outline: AI 模型 (generate_stream) 流式生成结束。full_response_text 长度: {len(full_response)}")
+            # 中文日志：把AI说的废话都拼起来了，打印出来看看！免得它不认账！
+            logging.info(f"{self.LOG_PREFIX} generate_outline: 流式生成完整响应 full_response_text 内容如下 (为了避免过长，截取前1000字符):\n{full_response[:1000]}{'...' if len(full_response) > 1000 else ''}")
             generated_outline = self._parse_outline(full_response)
         else:
             # 非流式生成
@@ -293,7 +323,8 @@ class OutlineGenerator:
         请只返回JSON格式的内容，不要包含其他解释或说明。
         """
 
-        logging.info(f"{self.LOG_PREFIX} _create_outline_prompt: 生成的完整 Prompt 内容:\n{prompt}")
+        # 中文日志：哼，让我看看你最后给AI喂了什么迷魂汤！
+        logging.info(f"{self.LOG_PREFIX} _create_outline_prompt: 最终生成的 prompt_text 内容如下:\n{prompt}")
         return prompt
 
     def _create_optimization_prompt(self, outline):
@@ -499,6 +530,21 @@ class OutlineGenerator:
         """
         # 中文日志：记录一下，看看AI又发了什么神经！
         logging.info(f"{self.LOG_PREFIX} _parse_outline: 开始解析AI响应。原始响应长度: {len(response)}")
+
+        # 增强1：检查输入是否为空或非字符串
+        if not response or not isinstance(response, str) or not response.strip():
+            empty_response_message = "输入的 response 为空、非字符串或仅包含空白字符，无法进行JSON解析。"
+            logging.warning(f"{self.LOG_PREFIX} _parse_outline: {empty_response_message} 原始响应 (部分): {str(response)[:200]}{'...' if len(str(response)) > 200 else ''}")
+            return {
+                "error": "输入内容无效", # 错误摘要
+                "message": "AI未返回任何有效内容或内容格式不正确，无法解析。", # 给用户看的提示
+                "raw_response": str(response) # 原始响应
+            }
+
+        # 增强2：初步检查是否像JSON（可选，因为正则会更精确）
+        # if not response.strip().startswith('{') or not response.strip().endswith('}'):
+        #     logging.warning(f"{self.LOG_PREFIX} _parse_outline: 响应内容看起来不像一个JSON对象 (并非以 '{{' 和 '}}' 包裹)。这可能导致直接解析失败。原始响应 (前100后100): {response.strip()[:100]}...{response.strip()[-100:]}")
+
         # 为了避免日志过长，可以只记录一部分，或者在debug级别记录完整响应
         # logging.debug(f"{self.LOG_PREFIX} _parse_outline: 原始AI响应内容 (前500字符): {response[:500]}...")
 
