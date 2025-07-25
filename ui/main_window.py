@@ -65,11 +65,11 @@ class MainWindow(QMainWindow):
         # 加载字体
         self._load_font()
 
+        # 初始化AI模型（必须在UI初始化之前，因为UI需要访问模型信息）
+        self._init_models()
+
         # 初始化UI
         self._init_ui()
-
-        # 初始化AI模型
-        self._init_models()
 
         # 初始化 Embedding 模型 (需要放在模型初始化之后，因为它可能依赖模型配置)
         self._init_embedding_model()
@@ -258,6 +258,32 @@ class MainWindow(QMainWindow):
             # 如果模型类型字符串本身就不认识
              raise ValueError(f"未知的模型类型: {model_type}")
 
+    def get_available_models(self):
+        """获取所有可用的模型列表（包括自定义模型）"""
+        models = []
+        
+        # 添加标准模型
+        if self.has_gpt:
+            models.append("GPT")
+        if self.has_claude:
+            models.append("Claude") 
+        if self.has_gemini:
+            models.append("Gemini")
+        if self.has_custom_openai:
+            models.append("自定义OpenAI")
+        if self.has_modelscope:
+            models.append("ModelScope")
+        if self.has_ollama:
+            models.append("Ollama")
+        if self.has_siliconflow:
+            models.append("SiliconFlow")
+            
+        # 添加多个自定义模型
+        if self.custom_openai_models:
+            models.extend(list(self.custom_openai_models.keys()))
+            
+        return models
+
     def _init_embedding_model(self):
         """初始化 Embedding 模型"""
         # 优先使用 SiliconFlow Embedding，如果配置了的话
@@ -302,15 +328,13 @@ class MainWindow(QMainWindow):
 
     def get_available_knowledge_bases(self):
         """获取可用的知识库列表"""
-        manager = self.get_knowledge_base_manager()
-        if manager:
+        if self.knowledge_base_manager:
             try:
-                return manager.list_knowledge_bases()
+                return self.knowledge_base_manager.list_knowledge_bases()
             except Exception as e:
-                print(f"获取知识库列表时出错: {e}")
-                # 出错时返回空列表，避免后续代码出错
+                print(f"获取知识库列表失败: {e}")
                 return []
-        return [] # 如果管理器不存在，也返回空列表
+        return []
 
     def _create_toolbar(self):
         """创建工具栏"""
