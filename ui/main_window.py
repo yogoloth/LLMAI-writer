@@ -357,9 +357,14 @@ class MainWindow(QMainWindow):
 
         save_action = QAction(get_save_icon(), "保存", self)
         save_action.setShortcut(QKeySequence.StandardKey.Save)
-        save_action.triggered.connect(self.save_novel)
+        save_action.triggered.connect(self.save_novel_quick)
         save_action.setProperty("primary", True)  # 设置为主要按钮
         toolbar.addAction(save_action)
+
+        save_as_action = QAction(get_save_icon(), "另存为", self) 
+        save_as_action.setShortcut(QKeySequence.StandardKey.SaveAs)
+        save_as_action.triggered.connect(self.save_novel)
+        toolbar.addAction(save_as_action)
 
         toolbar.addSeparator()
 
@@ -570,8 +575,36 @@ class MainWindow(QMainWindow):
             except Exception as e:
                 print(f"自动保存人物关系数据时出错: {e}")
 
+    def save_novel_quick(self):
+        """快速保存小说 (Ctrl+S)"""
+        # 检查是否有大纲
+        if not self.data_manager.get_outline():
+            QMessageBox.warning(self, "保存失败", "没有可保存的大纲数据")
+            return
+
+        # 检查是否已有保存路径
+        current_file = self.data_manager.current_file
+        
+        if current_file:
+            # 直接保存到当前文件
+            self.progress_indicator.start()
+            self.status_bar_manager.show_message("正在保存小说...")
+            
+            success = self.data_manager.save_to_file(current_file)
+            
+            self.progress_indicator.stop()
+            
+            if success:
+                self.status_bar_manager.show_message(f"小说已保存")
+            else:
+                self.status_bar_manager.show_message("保存失败")
+                QMessageBox.warning(self, "保存失败", "保存小说时出错")
+        else:
+            # 没有当前文件，调用另存为
+            self.save_novel()
+
     def save_novel(self):
-        """保存小说"""
+        """另存为小说 (Ctrl+Shift+S)"""
         # 显示进度指示器
         self.progress_indicator.start()
         self.status_bar_manager.show_message("正在保存小说...")
@@ -583,7 +616,7 @@ class MainWindow(QMainWindow):
             return
 
         # 选择保存文件
-        filepath, _ = QFileDialog.getSaveFileName(self, "保存小说", "", "AI小说文件 (*.ainovel)")
+        filepath, _ = QFileDialog.getSaveFileName(self, "另存为小说", "", "AI小说文件 (*.ainovel)")
         if not filepath:
             self.progress_indicator.stop()
             return
@@ -599,6 +632,7 @@ class MainWindow(QMainWindow):
         self.progress_indicator.stop()
 
         if success:
+            # current_file is already set by save_to_file method
             self.status_bar_manager.show_message(f"小说已保存到: {filepath}")
             QMessageBox.information(self, "保存成功", f"小说已保存到: {filepath}")
         else:
